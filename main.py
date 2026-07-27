@@ -1,31 +1,30 @@
 from contextlib import asynccontextmanager
 import os
 from database import get_db_connection, init_db
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 
+# Automatically create DB tables when the app starts up on Render
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure database tables exist on boot
     init_db()
     yield
 
 
 app = FastAPI(title="Payback AI", lifespan=lifespan)
 
-# Mount static folder only if it exists
+# Mount static folder if it exists
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Mount templates folder if it exists
-templates = (
-    Jinja2Templates(directory="templates")
-    if os.path.exists("templates")
-    else None
-)
+# Templates setup
+templates = Jinja2Templates(directory="templates")
+
+
+# --- ROUTES ---
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -34,12 +33,10 @@ async def home(request: Request):
     debts = conn.execute("SELECT * FROM debts").fetchall()
     conn.close()
 
-    if templates:
-        return templates.TemplateResponse(
-            "index.html", {"request": request, "debts": debts}
-        )
-
-    return HTMLResponse("<h1>Payback AI is Live!</h1>")
+    # Pass request directly as a keyword argument to fix Starlette TypeError
+    return templates.TemplateResponse(
+        request=request, name="index.html", context={"debts": debts}
+    )
 
 
 @app.post("/add")

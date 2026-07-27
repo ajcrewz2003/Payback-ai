@@ -1,52 +1,41 @@
-import sqlite3
 import os
-from dotenv import load_dotenv
+import sqlite3
 
-load_dotenv()
+# Dynamically set absolute path to ensure writable directory on local & production (Render)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.getenv("DB_PATH", os.path.join(BASE_DIR, "payback.db"))
 
-DB_NAME = os.getenv("DATABASE_URL", "payback.db")
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_NAME)
+    """Establish and return a connection to the SQLite database."""
+    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db():
+    """Initialize database tables on app startup."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    # Create users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        )
-    """)
-    
-    # Create logs table with user association
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS logs (
-            id TEXT PRIMARY KEY,
-            user_id INTEGER,
-            client_name TEXT NOT NULL,
-            amount INTEGER NOT NULL,
-            notice_type TEXT NOT NULL,
-            due_date TEXT,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    """)
-    
-    # Migrations for existing tables if needed
-    try:
-        cursor.execute("ALTER TABLE logs ADD COLUMN due_date TEXT")
-    except sqlite3.OperationalError:
-        pass
 
-    try:
-        cursor.execute("ALTER TABLE logs ADD COLUMN user_id INTEGER")
-    except sqlite3.OperationalError:
-        pass
+    # Create your tables here
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS debts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            person_name TEXT NOT NULL,
+            amount REAL NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """
+    )
 
     conn.commit()
     conn.close()
+
+
+if __name__ == "__main__":
+    init_db()
+    print("Database initialized successfully at:", DB_NAME)

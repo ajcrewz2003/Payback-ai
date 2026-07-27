@@ -1,10 +1,13 @@
 from contextlib import asynccontextmanager
+import json
 import os
 import sqlite3
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from google import genai
+from google.genai import types
 
 DB_FILE = "payback.db"
 
@@ -59,7 +62,6 @@ async def home(request: Request):
     ).fetchall()
     conn.close()
 
-    # Calculate dashboard header statistics (exclude PAID from outstanding total)
     total_outstanding = sum(
         inv["amount"] for inv in invoices if inv["status"] != "PAID"
     )
@@ -124,6 +126,92 @@ async def add_invoice(request: Request):
     return JSONResponse(
         {"status": "success", "message": "Invoice created successfully"}
     )
+
+
+# --- GEMINI AI PARSER ENDPOINT ---
+
+
+@app.post("/api/ai-add")
+async def ai_add_invoice(request: Request):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "GEMINI_API_KEY environment variable is missing on Render.",
+            },
+            status_code=500,
+        )
+
+    data = await request.json()
+    user_prompt = data.get("prompt", "")
+
+    if not user_prompt:
+        return JSONResponse(
+            {"status": "error", "message": "Prompt cannot be empty"},
+            status_code=400,
+        )
+
+    client = genai.Client(api_key=api_key)
+
+    system_instruction = (
+        "Extract invoice details from user text. Return structured JSON with keys:\n"
+        "- invoice_id: string (generate short unique code like Inv_101 if missing)\n"
+        "- client_name: string (person or company name)\n"
+        "- amount: number (float value)\n"
+        "- due_date: string (YYYY-MM-DD or readable date string)\n"
+        "- status: string (must be exactly 'FRIENDLY', 'URGENT', or 'PAID')"
+    )
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                response_mime_type="application/json",
+            ),
+        )
+
+        extracted = json.loads(response.text)
+
+        inv_id = extracted.get("invoice_id", "Inv_AI")
+        client_name = extracted.get("client_name", "Unknown")
+        amount = float(extracted.get("amount", 0))
+        due_date = extracted.get("due_date", "")
+        status = extracted.get("status", "FRIENDLY").upper()
+        if status not in ["FRIENDLY", "URGENT", "PAID"]:
+            status = "FRIENDLY"
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO invoices (invoice_id, client_name, amount, due_date, status)
+            VALUES (?, ?, ?, ?, ?)
+        """,
+            (inv_id, client_name, amount, due_date, status),
+        )
+        conn.commit()
+        conn.close()
+
+        return JSONResponse(
+            {"status": "success", "message": "AI invoice created successfully!"}
+        )
+
+    except sqlite3.IntegrityError:
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "AI generated an ID that already exists. Try again.",
+            },
+            status_code=400,
+        )
+    except Exception as e:
+        return JSONResponse(
+            {"status": "error", "message": f"AI Parsing failed: {str(e)}"},
+            status_code=500,
+        )
 
 
 @app.post("/update-status/{invoice_id}")

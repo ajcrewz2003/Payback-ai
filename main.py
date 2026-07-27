@@ -59,8 +59,7 @@ async def home(request: Request):
     ).fetchall()
     conn.close()
 
-    # Calculate statistics for the dashboard headers
-    total_outstanding = sum(inv["amount"] for inv in invoices)
+    total_outstanding = sum(inv["amount"] for inv in invoices if inv["status"] != "PAID")
     total_invoices = len(invoices)
     urgent_notices = sum(1 for inv in invoices if inv["status"] == "URGENT")
 
@@ -120,7 +119,7 @@ async def add_invoice(request: Request):
         conn.close()
 
     return JSONResponse(
-        {"status": "success", "message": "Invoice added successfully"}
+        {"status": "success", "message": "Invoice created successfully"}
     )
 
 
@@ -131,7 +130,6 @@ async def delete_invoice(invoice_id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Try deleting by string invoice_id first, then numeric ID
     cursor.execute("DELETE FROM invoices WHERE invoice_id = ?", (invoice_id,))
     if cursor.rowcount == 0:
         cursor.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))

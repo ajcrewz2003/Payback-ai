@@ -254,6 +254,32 @@ async def export_csv():
     )
 
 
+@app.get("/api/reminder-email/{invoice_id}")
+async def get_reminder_email(invoice_id: str):
+    conn = get_db_connection()
+    inv = conn.execute(
+        "SELECT * FROM invoices WHERE invoice_id = ? OR id = ?",
+        (invoice_id, invoice_id),
+    ).fetchone()
+    conn.close()
+
+    if not inv:
+        return JSONResponse(
+            {"status": "error", "message": "Invoice not found"}, status_code=404
+        )
+
+    subject = f"Friendly Reminder: Invoice {inv['invoice_id']} for ${inv['amount']}"
+    body = (
+        f"Hi {inv['client_name']},\n\n"
+        f"I hope you're doing well! This is a quick note to remind you about invoice "
+        f"{inv['invoice_id']} for ${inv['amount']:.2f}, which was due on {inv['due_date']}.\n\n"
+        f"Please let me know when you might be able to process this payment. "
+        f"Thank you so much!\n\nBest regards,\nYour Name"
+    )
+
+    return {"subject": subject, "body": body}
+
+
 @app.post("/update-status/{invoice_id}")
 async def update_status(invoice_id: str, request: Request):
     data = await request.json()

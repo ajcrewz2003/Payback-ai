@@ -49,6 +49,7 @@
 
         .btn-danger { background: #dc2626; padding: 6px 14px; border-radius: 6px; font-weight: 600; }
         .btn-success { background: #16a34a; }
+        .btn-ai { background: linear-gradient(135deg, #a855f7, #3b82f6); color: white; font-weight: 600; }
 
         .grid-stats {
             display: grid;
@@ -103,7 +104,12 @@
             outline: none;
             width: 100%;
             box-sizing: border-box;
-            color-scheme: dark; /* Force dark mode calendar popup */
+            color-scheme: dark;
+        }
+
+        .ai-input-container {
+            display: flex;
+            gap: 12px;
         }
 
         .filter-bar {
@@ -149,7 +155,6 @@
             color: var(--text-muted);
         }
 
-        /* Colored Badges */
         .status-btn {
             padding: 6px 12px;
             border-radius: 6px;
@@ -191,14 +196,22 @@
         </div>
     </div>
 
+    <!-- AI Prompt Card -->
+    <div class="form-card" style="border: 1px solid #8b5cf6;">
+        <h2 style="color: #c084fc;">✨ AI Quick Entry</h2>
+        <div class="ai-input-container">
+            <input type="text" id="ai_prompt" placeholder='Try: "Lent Sarah $45 for gas due next Friday"' />
+            <button type="button" class="btn-ai" onclick="submitAI()">Parse with AI</button>
+        </div>
+    </div>
+
     <div class="form-card">
-        <h2>New Invoice Details</h2>
+        <h2>Manual Invoice Details</h2>
         <form id="invoiceForm">
             <div class="form-grid">
                 <input type="text" id="invoice_id" placeholder="Invoice ID (e.g. Inv_1)" required>
                 <input type="text" id="client_name" placeholder="Client Name" required>
                 <input type="number" step="0.01" id="amount" placeholder="Amount ($)" required>
-                <!-- Native Calendar Picker -->
                 <input type="date" id="due_date" required>
                 <select id="status">
                     <option value="FRIENDLY">FRIENDLY</option>
@@ -236,7 +249,6 @@
                 <td>${{ "%.2f"|format(inv.amount) }}</td>
                 <td>{{ inv.due_date }}</td>
                 <td>
-                    <!-- Clickable status button toggles between FRIENDLY -> URGENT -> PAID -->
                     <button class="status-btn status-{{ inv.status }}" onclick="toggleStatus('{{ inv.invoice_id }}', '{{ inv.status }}')">
                         {{ inv.status }}
                     </button>
@@ -247,7 +259,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-muted);">No notices found.</td>
+                <td colspan="6" style="text-align: center; color: var(--text-muted);">No notices found. Add one above!</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -255,6 +267,35 @@
 </div>
 
 <script>
+    async function submitAI() {
+        const input = document.getElementById('ai_prompt');
+        if (!input.value.trim()) return alert('Please enter plain text for AI to parse!');
+
+        const btn = document.querySelector('.btn-ai');
+        btn.textContent = 'Thinking...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/ai-add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: input.value })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'AI parsing error');
+            }
+        } catch (err) {
+            alert('Error communicating with AI service');
+        } finally {
+            btn.textContent = 'Parse with AI';
+            btn.disabled = false;
+        }
+    }
+
     document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -281,7 +322,6 @@
     });
 
     async function toggleStatus(invId, currentStatus) {
-        // Cycle status: FRIENDLY -> URGENT -> PAID -> FRIENDLY
         let newStatus = 'URGENT';
         if (currentStatus === 'URGENT') newStatus = 'PAID';
         if (currentStatus === 'PAID') newStatus = 'FRIENDLY';

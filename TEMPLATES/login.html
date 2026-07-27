@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payback AI - Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body style="display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+    <div class="form-card" style="width:100%; max-width:400px; display:block;">
+        <h2 style="margin-top:0; color:#38bdf8; text-align:center;">Payback AI Login</h2>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <input type="text" id="username" placeholder="Username" style="padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:6px;">
+            <input type="password" id="password" placeholder="Password" style="padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:6px;">
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn btn-primary" style="flex:1;" onclick="handleAuth('login')">Log In</button>
+                <button class="btn btn-success" style="flex:1;" onclick="handleAuth('register')">Register</button>
+            </div>
+        </div>
+        <p id="error-msg" style="color:#ef4444; text-align:center; margin-top:15px; font-size:14px;"></p>
+    </div>
+
+    <script>
+        async function handleAuth(action) {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+            errorMsg.innerText = '';
+
+            if (!username || !password) {
+                errorMsg.innerText = "Please enter both username and password.";
+                return;
+            }
+
+            try {
+                const res = await fetch(`/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    if (action === 'register') {
+                        alert("Account registered successfully! Now click Log In.");
+                    } else {
+                        window.location.href = '/dashboard';
+                    }
+                } else {
+                    const data = await res.json();
+                    errorMsg.innerText = data.detail || "Authentication failed.";
+                }
+            } catch (err) {
+                errorMsg.innerText = "An error occurred. Try again.";
+            }
+        }
+    </script>
+</body>
+</html>

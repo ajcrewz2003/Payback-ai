@@ -1,0 +1,47 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 40px;
+    margin: 0;
+}
+.container { max-width: 950px; margin: 0 auto; }
+h1 { font-size: 28px; margin: 0; color: #38bdf8; }
+.header-actions { display: flex; gap: 10px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 25px; }
+.stat-card { background: #1e293b; padding: 18px; border-radius: 8px; border: 1px solid #334155; }
+.stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
+.stat-value { font-size: 24px; font-weight: bold; margin-top: 6px; color: #f8fafc; }
+
+.filter-bar { display: flex; gap: 10px; margin-top: 25px; }
+.filter-btn { background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+.filter-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; margin-top: 15px; }
+th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid #334155; }
+th { background: #0f172a; color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 12px; }
+tr:hover { background: #334155; }
+
+.badge { padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px; }
+.badge-urgent { background: #ef4444; color: white; }
+.badge-friendly { background: #10b981; color: white; }
+.badge-paid { background: #3b82f6; color: white; }
+
+.btn { border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.btn-primary { background: #0284c7; color: white; }
+.btn-primary:hover { background: #0369a1; }
+.btn-success { background: #10b981; color: white; }
+.btn-success:hover { background: #059669; }
+.btn-export { background: #8b5cf6; color: white; }
+.btn-export:hover { background: #7c3aed; }
+.btn-action { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; margin-right: 5px; }
+.btn-paid { background: #3b82f6; color: white; }
+.btn-paid:hover { background: #2563eb; }
+.btn-delete { background: #dc2626; color: white; }
+.btn-delete:hover { background: #b91c1c; }
+
+.form-card { background: #1e293b; padding: 20px; border-radius: 8px; margin-top: 20px; display: none; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+input, select { background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 6px; font-size: 14px; }
+input:focus, select:focus { outline: none; border-color: #38bdf8; }

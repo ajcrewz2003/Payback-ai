@@ -6,8 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from google import genai
-from google.genai import types
+from openai import OpenAI
 
 DB_FILE = "payback.db"
 
@@ -128,17 +127,17 @@ async def add_invoice(request: Request):
     )
 
 
-# --- GEMINI AI PARSER ENDPOINT ---
+# --- OPENAI PARSER ENDPOINT ---
 
 
 @app.post("/api/ai-add")
-async def ai_ai_add_invoice(request: Request):
-    api_key = os.environ.get("GEMINI_API_KEY")
+async def ai_add_invoice(request: Request):
+    api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         return JSONResponse(
             {
                 "status": "error",
-                "message": "GEMINI_API_KEY environment variable is missing on Render.",
+                "message": "OPENAI_API_KEY environment variable is missing on Render.",
             },
             status_code=500,
         )
@@ -152,7 +151,7 @@ async def ai_ai_add_invoice(request: Request):
             status_code=400,
         )
 
-    client = genai.Client(api_key=api_key)
+    client = OpenAI(api_key=api_key)
 
     system_instruction = (
         "Extract invoice details from user text. Return structured JSON with keys:\n"
@@ -164,16 +163,16 @@ async def ai_ai_add_invoice(request: Request):
     )
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-            ),
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
         )
 
-        extracted = json.loads(response.text)
+        extracted = json.loads(response.choices[0].message.content)
 
         inv_id = extracted.get("invoice_id", "Inv_AI")
         client_name = extracted.get("client_name", "Unknown")

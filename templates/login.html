@@ -47,22 +47,31 @@
             font-weight: bold;
             color: #0f172a;
         }
+        .section-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
         .ai-box {
             background: #eff6ff;
             border: 1px solid #bfdbfe;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 30px;
         }
-        .ai-box textarea {
+        .ai-box textarea, .section-box input, .section-box select {
             width: 100%;
-            height: 80px;
             padding: 10px;
             border: 1px solid #cbd5e1;
             border-radius: 4px;
-            resize: vertical;
             box-sizing: border-box;
             font-family: inherit;
+            font-size: 14px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
         }
         button {
             background: #2563eb;
@@ -119,13 +128,44 @@
         .status-PAID { background: #dcfce7; color: #166534; }
         
         .actions-cell button {
-            background: #fee2e2;
-            color: #991b1b;
             padding: 6px 10px;
             font-size: 12px;
+            margin-right: 4px;
         }
-        .actions-cell button:hover {
+        .remind-btn {
+            background: #0284c7;
+        }
+        .remind-btn:hover {
+            background: #0369a1;
+        }
+        .delete-btn {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .delete-btn:hover {
             background: #fecaca;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+        }
+        .modal-content textarea {
+            width: 100%;
+            height: 150px;
+            margin-top: 10px;
+            padding: 8px;
+            font-family: inherit;
         }
     </style>
 </head>
@@ -150,11 +190,30 @@
         </div>
 
         <!-- AI Quick Entry Box -->
-        <div class="ai-box">
+        <div class="section-box ai-box">
             <h3>AI Quick Entry</h3>
             <p style="font-size: 13px; color: #64748b; margin-top: 0;">Type naturally (e.g., "John Smith owes me 150 dollars for design work due next Monday")</p>
             <textarea id="aiPrompt" placeholder="Describe the invoice..."></textarea>
             <button onclick="submitAIPrompt()" style="margin-top: 10px;" id="aiSubmitBtn">Parse & Add Invoice</button>
+        </div>
+
+        <!-- Manual Entry Form -->
+        <div class="section-box">
+            <h3>Manual Invoice Entry</h3>
+            <form id="manualForm" onsubmit="submitManualInvoice(event)">
+                <div class="form-grid">
+                    <input type="text" id="manId" placeholder="Invoice ID (e.g. INV-001)" required>
+                    <input type="text" id="manClient" placeholder="Client Name" required>
+                    <input type="number" step="0.01" id="manAmount" placeholder="Amount ($)" required>
+                    <input type="date" id="manDueDate" required>
+                    <select id="manStatus">
+                        <option value="FRIENDLY">Friendly</option>
+                        <option value="URGENT">Urgent</option>
+                        <option value="PAID">Paid</option>
+                    </select>
+                </div>
+                <button type="submit" style="background: #0f172a;">Add Invoice Manually</button>
+            </form>
         </div>
 
         <!-- Search, Filter, and Export Controls -->
@@ -196,7 +255,8 @@
                         </select>
                     </td>
                     <td class="actions-cell">
-                        <button onclick="deleteInvoice('{{ inv.invoice_id }}')">Delete</button>
+                        <button class="remind-btn" onclick="openReminder('{{ inv.invoice_id }}')">Remind</button>
+                        <button class="delete-btn" onclick="deleteInvoice('{{ inv.invoice_id }}')">Delete</button>
                     </td>
                 </tr>
                 {% else %}
@@ -206,6 +266,20 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <!-- Email Reminder Modal -->
+    <div id="reminderModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Client Reminder Draft</h3>
+            <p style="font-size:13px; color:#64748b;">Copy this message to send via email or text:</p>
+            <input type="text" id="emailSubject" style="width:100%; padding:8px; margin-bottom:5px; border:1px solid #cbd5e1; border-radius:4px;" readonly>
+            <textarea id="emailBody" readonly></textarea>
+            <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="copyReminder()" style="background: #059669;">Copy Text</button>
+                <button onclick="closeReminder()" style="background: #64748b;">Close</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -239,6 +313,33 @@
             }
         }
 
+        async function submitManualInvoice(event) {
+            event.preventDefault();
+            const data = {
+                invoice_id: document.getElementById('manId').value,
+                client_name: document.getElementById('manClient').value,
+                amount: parseFloat(document.getElementById('manAmount').value),
+                due_date: document.getElementById('manDueDate').value,
+                status: document.getElementById('manStatus').value
+            };
+
+            try {
+                const response = await fetch('/add-invoice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (err) {
+                alert("Failed to add manual invoice.");
+            }
+        }
+
         async function updateStatus(invoiceId, selectElement) {
             const newStatus = selectElement.value;
             try {
@@ -263,6 +364,33 @@
             } catch (err) {
                 alert("Failed to delete invoice.");
             }
+        }
+
+        async function openReminder(invoiceId) {
+            try {
+                const res = await fetch(`/api/reminder-email/${invoiceId}`);
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('emailSubject').value = data.subject;
+                    document.getElementById('emailBody').value = data.body;
+                    document.getElementById('reminderModal').style.display = 'flex';
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert("Failed to load reminder template.");
+            }
+        }
+
+        function closeReminder() {
+            document.getElementById('reminderModal').style.display = 'none';
+        }
+
+        function copyReminder() {
+            const subject = document.getElementById('emailSubject').value;
+            const body = document.getElementById('emailBody').value;
+            navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+            alert("Reminder copied to clipboard!");
         }
 
         function filterInvoices() {

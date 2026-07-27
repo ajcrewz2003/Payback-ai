@@ -2,323 +2,263 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payback AI Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css">
     <style>
-        .overdue-row { background: rgba(239, 68, 68, 0.15) !important; }
-        .badge-overdue { background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
-        .progress-bar-container { background: #0f172a; border-radius: 8px; height: 12px; width: 100%; overflow: hidden; margin-top: 8px; border: 1px solid #334155; }
-        .progress-bar-fill { background: #22c55e; height: 100%; width: 0%; transition: width 0.4s ease; }
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #111827;
+            --border-color: #1f2937;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 { font-size: 1.5rem; margin: 0; color: #60a5fa; }
+
+        .btn-group { display: flex; gap: 8px; }
+
+        button, .btn {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        button:hover { opacity: 0.9; }
+        .btn-danger { background: var(--accent-red); }
+        .btn-success { background: var(--accent-green); }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .form-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .form-card h2 { margin-top: 0; font-size: 1.1rem; color: #60a5fa; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        input, select {
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: #1f2937;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .badge-FRIENDLY { background: #1e3a8a; color: #93c5fd; }
+        .badge-URGENT { background: #7f1d1d; color: #fca5a5; }
+        .badge-PAID { background: #064e3b; color: #6ee7b7; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>Payback AI Dashboard</h1>
-            <div class="header-actions">
-                <span style="color:#94a3b8; align-self:center; margin-right:10px;">User: <b style="color:#f8fafc;">{{ username }}</b></span>
-                <button class="btn btn-export" onclick="window.location.href='/export-csv'">Export CSV</button>
-                <button class="btn btn-success" onclick="toggleForm()">+ Add Invoice</button>
-                <button class="btn btn-primary" onclick="loadNotices()">Refresh</button>
-                <button class="btn" style="background:#ef4444; color:white;" onclick="window.location.href='/logout'">Logout</button>
-            </div>
-        </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Total Outstanding</div>
-                <div class="stat-value" id="stat-total">$0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Invoices</div>
-                <div class="stat-value" id="stat-count">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Urgent Notices</div>
-                <div class="stat-value" id="stat-urgent" style="color: #ef4444;">0</div>
-            </div>
+<div class="container">
+    <header>
+        <h1>Payback AI Dashboard</h1>
+        <div class="btn-group">
+            <button onclick="window.location.reload()">Refresh</button>
         </div>
+    </header>
 
-        <div class="form-card" style="margin-bottom: 25px; padding: 15px 20px;">
-            <div style="display: flex; justify-content: space-between; font-size: 14px; color: #94a3b8; margin-bottom: 5px;">
-                <span>Collection Progress</span>
-                <span id="progress-percent">0% Collected</span>
-            </div>
-            <div class="progress-bar-container">
-                <div id="progress-fill" class="progress-bar-fill"></div>
-            </div>
+    <div class="grid-stats">
+        <div class="stat-card">
+            <h3>Total Outstanding</h3>
+            <div class="value">${{ "%.2f"|format(stats.total_outstanding) }}</div>
         </div>
+        <div class="stat-card">
+            <h3>Total Invoices</h3>
+            <div class="value">{{ stats.total_invoices }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Urgent Notices</h3>
+            <div class="value" style="color: var(--accent-red)">{{ stats.urgent_notices }}</div>
+        </div>
+    </div>
 
-        <div id="add-form" class="form-card">
-            <h3 style="margin-top:0; color:#38bdf8;">New Invoice Details</h3>
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;">
-                <input type="text" id="inv_id" placeholder="ID (e.g. inv_1005)">
-                <input type="text" id="client_name" placeholder="Client Name">
-                <input type="number" id="amount" placeholder="Amount ($)">
-                <input type="date" id="due_date" style="color-scheme: dark;">
-                <select id="notice_type">
+    <div class="form-card">
+        <h2>New Invoice Details</h2>
+        <form id="invoiceForm">
+            <div class="form-grid">
+                <input type="text" id="invoice_id" placeholder="Invoice ID (e.g. Inv_1)" required>
+                <input type="text" id="client_name" placeholder="Client Name" required>
+                <input type="number" step="0.01" id="amount" placeholder="Amount ($)" required>
+                <input type="text" id="due_date" placeholder="Due Date (e.g. 9 Nov 2026)">
+                <select id="status">
                     <option value="FRIENDLY">FRIENDLY</option>
                     <option value="URGENT">URGENT</option>
                     <option value="PAID">PAID</option>
                 </select>
             </div>
-            <button class="btn btn-primary" onclick="createNotice()">Submit Invoice</button>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <div class="filter-bar" style="margin-bottom: 0;">
-                <button class="filter-btn active" onclick="setFilter('ALL', this)">All</button>
-                <button class="filter-btn" onclick="setFilter('URGENT', this)">Urgent</button>
-                <button class="filter-btn" onclick="setFilter('FRIENDLY', this)">Friendly</button>
-                <button class="filter-btn" onclick="setFilter('PAID', this)">Paid</button>
-            </div>
-            <input type="text" id="search-input" placeholder="🔍 Search client or ID..." onkeyup="filterTable()" style="padding: 8px 12px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; width: 220px;">
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Invoice ID</th>
-                    <th>Client Name</th>
-                    <th>Amount ($)</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="notices-table">
-                <tr><td colspan="6">Loading invoices...</td></tr>
-            </tbody>
-        </table>
+            <button type="submit" class="btn-success">Submit Invoice</button>
+        </form>
     </div>
 
-    <!-- Notice Draft Modal -->
-    <div id="notice-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center;">
-        <div style="background:#1e293b; padding:25px; border-radius:10px; width:90%; max-width:550px; border:1px solid #334155;">
-            <h3 style="margin-top:0; color:#38bdf8;" id="modal-title">Generated Reminder Notice</h3>
-            <textarea id="notice-text" style="width:100%; height:160px; background:#0f172a; border:1px solid #334155; color:#f8fafc; padding:12px; border-radius:6px; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
-            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px;">
-                <button class="btn btn-primary" onclick="copyNoticeText()">Copy Text</button>
-                <button class="btn" style="background:#475569; color:white;" onclick="closeModal()">Close</button>
-            </div>
-        </div>
-    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Invoice ID</th>
+                <th>Client Name</th>
+                <th>Amount ($)</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in invoices %}
+            <tr>
+                <td>{{ inv.invoice_id }}</td>
+                <td>{{ inv.client_name }}</td>
+                <td>${{ "%.2f"|format(inv.amount) }}</td>
+                <td>{{ inv.due_date }}</td>
+                <td><span class="badge badge-{{ inv.status }}">{{ inv.status }}</span></td>
+                <td>
+                    <button class="btn-danger" onclick="deleteInvoice('{{ inv.invoice_id }}')">Delete</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted);">No invoices found. Add one above!</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-    <script>
-        let currentFilter = 'ALL';
-        let allNotices = [];
+<script>
+    document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const payload = {
+            invoice_id: document.getElementById('invoice_id').value,
+            client_name: document.getElementById('client_name').value,
+            amount: parseFloat(document.getElementById('amount').value),
+            due_date: document.getElementById('due_date').value,
+            status: document.getElementById('status').value
+        };
 
-        function setFilter(type, btn) {
-            currentFilter = type;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            loadNotices();
+        const res = await fetch('/add-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Error creating invoice');
         }
+    });
 
-        function toggleForm() {
-            const form = document.getElementById('add-form');
-            form.style.display = form.style.display === 'block' ? 'none' : 'block';
+    async function deleteInvoice(invId) {
+        if (!confirm('Are you sure you want to delete ' + invId + '?')) return;
+
+        const res = await fetch('/delete-invoice/' + invId, {
+            method: 'POST'
+        });
+
+        if (res.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to delete invoice');
         }
+    }
+</script>
 
-        async function loadNotices() {
-            try {
-                const url = currentFilter === 'ALL' ? '/notices' : `/notices?notice_type=${currentFilter}`;
-                const res = await fetch(url);
-                if (res.status === 401) {
-                    window.location.href = '/login';
-                    return;
-                }
-                const data = await res.json();
-                allNotices = data.data || [];
-                renderTable(allNotices);
-
-                const allRes = await fetch('/notices');
-                const allData = await allRes.json();
-                let totalOutstanding = 0;
-                let totalPaid = 0;
-                let urgentCount = 0;
-
-                if (allData.data) {
-                    allData.data.forEach(i => {
-                        if (i.notice_type === 'PAID') {
-                            totalPaid += i.amount;
-                        } else {
-                            totalOutstanding += i.amount;
-                        }
-                        if (i.notice_type === 'URGENT') urgentCount++;
-                    });
-
-                    const grandTotal = totalOutstanding + totalPaid;
-                    const percentCollected = grandTotal > 0 ? Math.round((totalPaid / grandTotal) * 100) : 0;
-
-                    document.getElementById('stat-total').innerText = `$${totalOutstanding}`;
-                    document.getElementById('stat-count').innerText = allData.data.length;
-                    document.getElementById('stat-urgent').innerText = urgentCount;
-
-                    document.getElementById('progress-percent').innerText = `${percentCollected}% Collected ($${totalPaid} / $${grandTotal})`;
-                    document.getElementById('progress-fill').style.width = `${percentCollected}%`;
-                }
-
-            } catch (err) {
-                console.error("Failed to load notices:", err);
-            }
-        }
-
-        function renderTable(items) {
-            const tbody = document.getElementById('notices-table');
-            tbody.innerHTML = '';
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            if (!items || items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6">No notices found.</td></tr>';
-                return;
-            }
-
-            items.forEach(item => {
-                let badgeClass = 'badge-friendly';
-                if (item.notice_type === 'URGENT') badgeClass = 'badge-urgent';
-                if (item.notice_type === 'PAID') badgeClass = 'badge-paid';
-
-                const isOverdue = item.due_date && item.due_date < todayStr && item.notice_type !== 'PAID';
-                const rowClass = isOverdue ? 'overdue-row' : '';
-                const overdueTag = isOverdue ? '<span class="badge-overdue">OVERDUE</span>' : '';
-
-                const markPaidButton = item.notice_type !== 'PAID' 
-                    ? `<button class="btn-action btn-paid" onclick="markAsPaid('${item.id}', '${item.client_name}', ${item.amount}, '${item.due_date || ''}')">Mark Paid</button>`
-                    : '';
-
-                const draftNoticeButton = item.notice_type !== 'PAID'
-                    ? `<button class="btn-action" style="background:#8b5cf6; color:white;" onclick="generateDraftNotice('${item.id}', '${item.client_name}', ${item.amount}, '${item.notice_type}', '${item.due_date || ''}')">Draft Notice</button>`
-                    : '';
-
-                tbody.innerHTML += `
-                    <tr class="${rowClass}">
-                        <td><b>${item.id}</b></td>
-                        <td>${item.client_name}</td>
-                        <td>$${item.amount}</td>
-                        <td>${item.due_date || 'N/A'} ${overdueTag}</td>
-                        <td><span class="badge ${badgeClass}">${item.notice_type}</span></td>
-                        <td>
-                            ${draftNoticeButton}
-                            ${markPaidButton}
-                            <button class="btn-action btn-delete" onclick="deleteNotice('${item.id}')">Delete</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function filterTable() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const filtered = allNotices.filter(item => 
-                item.client_name.toLowerCase().includes(query) || 
-                item.id.toLowerCase().includes(query)
-            );
-            renderTable(filtered);
-        }
-
-        function generateDraftNotice(id, client, amount, type, dueDate) {
-            let message = "";
-            const dueInfo = dueDate ? ` (Due: ${dueDate})` : '';
-            if (type === 'URGENT') {
-                message = `URGENT NOTICE: Overdue Payment\n\nDear ${client},\n\nThis is an urgent reminder regarding invoice ${id} for $${amount}${dueInfo}. Payment is now past due. Please remit payment immediately or contact us if you have any questions.\n\nThank you,\nPayback AI Team`;
-            } else {
-                message = `Friendly Payment Reminder\n\nHi ${client},\n\nHope you're doing well! Just a quick reminder regarding invoice ${id} for $${amount}${dueInfo}. Let us know once payment has been submitted.\n\nBest regards,\nPayback AI Team`;
-            }
-
-            document.getElementById('notice-text').value = message;
-            document.getElementById('notice-modal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('notice-modal').style.display = 'none';
-        }
-
-        function copyNoticeText() {
-            const textarea = document.getElementById('notice-text');
-            textarea.select();
-            navigator.clipboard.writeText(textarea.value);
-            alert("Reminder text copied to clipboard!");
-        }
-
-        async function createNotice() {
-            const id = document.getElementById('inv_id').value;
-            const client_name = document.getElementById('client_name').value;
-            const amount = parseInt(document.getElementById('amount').value);
-            const notice_type = document.getElementById('notice_type').value;
-            const due_date = document.getElementById('due_date').value;
-
-            if (!id || !client_name || isNaN(amount)) {
-                alert("Please fill in all fields correctly.");
-                return;
-            }
-
-            try {
-                const res = await fetch('/notices', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, client_name, amount, notice_type, due_date })
-                });
-
-                if (res.ok) {
-                    document.getElementById('inv_id').value = '';
-                    document.getElementById('client_name').value = '';
-                    document.getElementById('amount').value = '';
-                    document.getElementById('due_date').value = '';
-                    toggleForm();
-                    loadNotices();
-                } else {
-                    const errData = await res.json();
-                    alert("Error: " + (errData.detail || "Failed to create invoice."));
-                }
-            } catch (err) {
-                console.error("Create error:", err);
-            }
-        }
-
-        async function markAsPaid(noticeId, clientName, amount, dueDate) {
-            try {
-                const res = await fetch(`/notices/${noticeId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: noticeId,
-                        client_name: clientName,
-                        amount: amount,
-                        notice_type: 'PAID',
-                        due_date: dueDate
-                    })
-                });
-
-                if (res.ok) {
-                    loadNotices();
-                } else {
-                    alert("Failed to update status.");
-                }
-            } catch (err) {
-                console.error("Update error:", err);
-            }
-        }
-
-        async function deleteNotice(noticeId) {
-            if (!confirm(`Are you sure you want to delete ${noticeId}?`)) return;
-
-            try {
-                const res = await fetch(`/notices/${noticeId}`, {
-                    method: 'DELETE'
-                });
-
-                if (res.ok) {
-                    loadNotices();
-                } else {
-                    alert("Failed to delete notice.");
-                }
-            } catch (err) {
-                console.error("Delete error:", err);
-            }
-        }
-
-        loadNotices();
-    </script>
 </body>
 </html>

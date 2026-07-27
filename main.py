@@ -132,7 +132,7 @@ async def add_invoice(request: Request):
 
 
 @app.post("/api/ai-add")
-async def ai_add_invoice(request: Request):
+async def ai_ai_add_invoice(request: Request):
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         return JSONResponse(
@@ -165,7 +165,7 @@ async def ai_add_invoice(request: Request):
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.0-flash",
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,

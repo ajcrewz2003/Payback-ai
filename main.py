@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
+import csv
+import io
 import json
 import os
 import sqlite3
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI
@@ -137,7 +139,9 @@ async def ai_add_invoice(request: Request):
         return JSONResponse(
             {
                 "status": "error",
-                "message": "OPENAI_API_KEY environment variable is missing on Render.",
+                "message": (
+                    "OPENAI_API_KEY environment variable is missing on Render."
+                ),
             },
             status_code=500,
         )
@@ -154,12 +158,12 @@ async def ai_add_invoice(request: Request):
     client = OpenAI(api_key=api_key)
 
     system_instruction = (
-        "Extract invoice details from user text. Return structured JSON with keys:\n"
-        "- invoice_id: string (generate short unique code like Inv_101 if missing)\n"
-        "- client_name: string (person or company name)\n"
-        "- amount: number (float value)\n"
-        "- due_date: string (YYYY-MM-DD or readable date string)\n"
-        "- status: string (must be exactly 'FRIENDLY', 'URGENT', or 'PAID')"
+        "Extract invoice details from user text. Return structured JSON with"
+        " keys:\n- invoice_id: string (generate short unique code like Inv_101"
+        " if missing)\n- client_name: string (person or company name)\n-"
+        " amount: number (float value)\n- due_date: string (YYYY-MM-DD or"
+        " readable date string)\n- status: string (must be exactly 'FRIENDLY',"
+        " 'URGENT', or 'PAID')"
     )
 
     try:
@@ -202,7 +206,9 @@ async def ai_add_invoice(request: Request):
         return JSONResponse(
             {
                 "status": "error",
-                "message": "AI generated an ID that already exists. Try again.",
+                "message": (
+                    "AI generated an ID that already exists. Try again."
+                ),
             },
             status_code=400,
         )
@@ -211,6 +217,41 @@ async def ai_add_invoice(request: Request):
             {"status": "error", "message": f"AI Parsing failed: {str(e)}"},
             status_code=500,
         )
+
+
+@app.get("/api/export-csv")
+async def export_csv():
+    conn = get_db_connection()
+    invoices = conn.execute(
+        "SELECT invoice_id, client_name, amount, due_date, status FROM invoices"
+    ).fetchall()
+    conn.close()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow(["Invoice ID", "Client Name", "Amount", "Due Date", "Status"])
+
+    for inv in invoices:
+        writer.writerow(
+            [
+                inv["invoice_id"],
+                inv["client_name"],
+                inv["amount"],
+                inv["due_date"],
+                inv["status"],
+            ]
+        )
+
+    output.seek(0)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=invoices_export.csv"
+        },
+    )
 
 
 @app.post("/update-status/{invoice_id}")
@@ -247,7 +288,7 @@ async def delete_invoice(invoice_id: str):
     cursor = conn.cursor()
 
     cursor.execute("DELETE FROM invoices WHERE invoice_id = ?", (invoice_id,))
-    if cursor.rowcount == 0:
+    if cursor.rowcount == "0" or cursor.rowcount == 0:
         cursor.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))
 
     conn.commit()

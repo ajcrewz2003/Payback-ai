@@ -59,7 +59,10 @@ async def home(request: Request):
     ).fetchall()
     conn.close()
 
-    total_outstanding = sum(inv["amount"] for inv in invoices if inv["status"] != "PAID")
+    # Calculate dashboard header statistics (exclude PAID from outstanding total)
+    total_outstanding = sum(
+        inv["amount"] for inv in invoices if inv["status"] != "PAID"
+    )
     total_invoices = len(invoices)
     urgent_notices = sum(1 for inv in invoices if inv["status"] == "URGENT")
 
@@ -120,6 +123,32 @@ async def add_invoice(request: Request):
 
     return JSONResponse(
         {"status": "success", "message": "Invoice created successfully"}
+    )
+
+
+@app.post("/update-status/{invoice_id}")
+async def update_status(invoice_id: str, request: Request):
+    data = await request.json()
+    new_status = data.get("status", "FRIENDLY")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE invoices SET status = ? WHERE invoice_id = ?",
+        (new_status, invoice_id),
+    )
+    if cursor.rowcount == 0:
+        cursor.execute(
+            "UPDATE invoices SET status = ? WHERE id = ?",
+            (new_status, invoice_id),
+        )
+
+    conn.commit()
+    conn.close()
+
+    return JSONResponse(
+        {"status": "success", "message": "Status updated successfully"}
     )
 
 

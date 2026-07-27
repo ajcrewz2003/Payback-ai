@@ -9,9 +9,6 @@
             --bg-color: #0b0f19;
             --card-bg: #111827;
             --border-color: #1f2937;
-            --accent-blue: #3b82f6;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
             --text-main: #f9fafb;
             --text-muted: #9ca3af;
         }
@@ -34,32 +31,28 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
         }
 
-        h1 { font-size: 1.5rem; margin: 0; color: #60a5fa; }
+        h1 { font-size: 1.5rem; margin: 0; color: #60a5fa; font-weight: 700; }
 
         .btn-group { display: flex; gap: 8px; }
 
         button, .btn {
-            background: var(--accent-blue);
+            background: #2563eb;
             color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 500;
-            transition: opacity 0.2s;
         }
 
-        button:hover { opacity: 0.9; }
-        .btn-danger { background: var(--accent-red); padding: 6px 12px; font-size: 0.8rem; }
-        .btn-success { background: var(--accent-green); }
+        .btn-danger { background: #dc2626; padding: 6px 14px; border-radius: 6px; font-weight: 600; }
+        .btn-success { background: #16a34a; }
 
         .grid-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             margin-bottom: 24px;
         }
@@ -96,7 +89,7 @@
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
             gap: 12px;
             margin-bottom: 16px;
         }
@@ -110,6 +103,7 @@
             outline: none;
             width: 100%;
             box-sizing: border-box;
+            color-scheme: dark; /* Force dark mode calendar popup */
         }
 
         .filter-bar {
@@ -124,11 +118,13 @@
             padding: 6px 16px;
             border-radius: 6px;
             font-size: 0.85rem;
+            border: 1px solid var(--border-color);
         }
 
         .tab-btn.active {
-            background: var(--accent-blue);
+            background: #2563eb;
             color: white;
+            border-color: #2563eb;
         }
 
         table {
@@ -153,16 +149,21 @@
             color: var(--text-muted);
         }
 
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
+        /* Colored Badges */
+        .status-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
             font-size: 0.75rem;
-            font-weight: bold;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            display: inline-block;
         }
 
-        .badge-FRIENDLY { background: #1e3a8a; color: #93c5fd; }
-        .badge-URGENT { background: #7f1d1d; color: #fca5a5; }
-        .badge-PAID { background: #064e3b; color: #6ee7b7; }
+        .status-FRIENDLY { background: #2563eb; color: #ffffff; }
+        .status-URGENT { background: #dc2626; color: #ffffff; }
+        .status-PAID { background: #16a34a; color: #ffffff; }
     </style>
 </head>
 <body>
@@ -186,7 +187,7 @@
         </div>
         <div class="stat-card">
             <h3>Urgent Notices</h3>
-            <div class="value" style="color: var(--accent-red)">{{ stats.urgent_notices }}</div>
+            <div class="value" style="color: #ef4444">{{ stats.urgent_notices }}</div>
         </div>
     </div>
 
@@ -197,7 +198,8 @@
                 <input type="text" id="invoice_id" placeholder="Invoice ID (e.g. Inv_1)" required>
                 <input type="text" id="client_name" placeholder="Client Name" required>
                 <input type="number" step="0.01" id="amount" placeholder="Amount ($)" required>
-                <input type="text" id="due_date" placeholder="Due Date (e.g. 9 Nov 2026)">
+                <!-- Native Calendar Picker -->
+                <input type="date" id="due_date" required>
                 <select id="status">
                     <option value="FRIENDLY">FRIENDLY</option>
                     <option value="URGENT">URGENT</option>
@@ -233,14 +235,19 @@
                 <td>{{ inv.client_name }}</td>
                 <td>${{ "%.2f"|format(inv.amount) }}</td>
                 <td>{{ inv.due_date }}</td>
-                <td><span class="badge badge-{{ inv.status }}">{{ inv.status }}</span></td>
+                <td>
+                    <!-- Clickable status button toggles between FRIENDLY -> URGENT -> PAID -->
+                    <button class="status-btn status-{{ inv.status }}" onclick="toggleStatus('{{ inv.invoice_id }}', '{{ inv.status }}')">
+                        {{ inv.status }}
+                    </button>
+                </td>
                 <td>
                     <button class="btn-danger" onclick="deleteInvoice('{{ inv.invoice_id }}')">Delete</button>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-muted);">No invoices found. Add one above!</td>
+                <td colspan="6" style="text-align: center; color: var(--text-muted);">No notices found.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -259,39 +266,47 @@
             status: document.getElementById('status').value
         };
 
-        try {
-            const res = await fetch('/add-invoice', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+        const res = await fetch('/add-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
+        if (res.ok) {
+            window.location.reload();
+        } else {
             const data = await res.json();
-            if (res.ok) {
-                window.location.reload();
-            } else {
-                alert(data.message || 'Error adding invoice');
-            }
-        } catch (err) {
-            alert('Server error. Please check backend connection.');
+            alert(data.message || 'Error adding invoice');
         }
     });
+
+    async function toggleStatus(invId, currentStatus) {
+        // Cycle status: FRIENDLY -> URGENT -> PAID -> FRIENDLY
+        let newStatus = 'URGENT';
+        if (currentStatus === 'URGENT') newStatus = 'PAID';
+        if (currentStatus === 'PAID') newStatus = 'FRIENDLY';
+
+        const res = await fetch('/update-status/' + invId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if (res.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to update status');
+        }
+    }
 
     async function deleteInvoice(invId) {
         if (!confirm('Are you sure you want to delete invoice ' + invId + '?')) return;
 
-        try {
-            const res = await fetch('/delete-invoice/' + invId, {
-                method: 'POST'
-            });
-
-            if (res.ok) {
-                window.location.reload();
-            } else {
-                alert('Failed to delete invoice');
-            }
-        } catch (err) {
-            alert('Server error while deleting invoice');
+        const res = await fetch('/delete-invoice/' + invId, { method: 'POST' });
+        if (res.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to delete invoice');
         }
     }
 
@@ -304,8 +319,8 @@
             if (status === 'ALL') {
                 row.style.display = '';
             } else {
-                const badge = row.querySelector('.badge');
-                if (badge && badge.textContent.trim() === status) {
+                const btn = row.querySelector('.status-btn');
+                if (btn && btn.textContent.trim() === status) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';

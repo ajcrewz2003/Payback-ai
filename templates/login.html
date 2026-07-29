@@ -3,415 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payback AI - Smart Invoice Manager</title>
+    <title>Login - Payback AI</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f4f6f9;
-            color: #333;
+            background-color: #0f172a;
+            color: #f8fafc;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
-        .container {
-            max-width: 950px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 30px;
+        .login-card {
+            background: #1e293b;
+            padding: 40px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid #334155;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
         }
-        h1 {
+        h2 {
             margin-top: 0;
-            color: #111;
+            margin-bottom: 10px;
+            color: #f8fafc;
+            text-align: center;
         }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+        p.subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
             margin-bottom: 30px;
         }
-        .stat-card {
-            background: #f8fafc;
-            padding: 15px 20px;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
-        }
-        .stat-card h3 {
-            margin: 0 0 5px 0;
-            font-size: 14px;
-            color: #64748b;
-        }
-        .stat-card p {
-            margin: 0;
-            font-size: 20px;
-            font-weight: bold;
-            color: #0f172a;
-        }
-        .section-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 20px;
-            border-radius: 6px;
+        .form-group {
             margin-bottom: 20px;
         }
-        .ai-box {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #94a3b8;
+            font-weight: 500;
         }
-        .ai-box textarea, .section-box input, .section-box select {
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            color: #f8fafc;
             border-radius: 4px;
             box-sizing: border-box;
             font-family: inherit;
             font-size: 14px;
         }
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-            margin-bottom: 10px;
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        input::placeholder {
+            color: #64748b;
         }
         button {
-            background: #2563eb;
+            width: 100%;
+            background: #3b82f6;
             color: white;
             border: none;
-            padding: 10px 16px;
+            padding: 12px;
             border-radius: 4px;
             cursor: pointer;
             font-weight: 500;
+            font-size: 15px;
+            margin-top: 10px;
         }
         button:hover {
-            background: #1d4ed8;
+            background: #2563eb;
         }
-        .filter-container {
+        .error-message {
+            background: #450a0a;
+            border: 1px solid #7f1d1d;
+            color: #f87171;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 13px;
             margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .filter-container input, .filter-container select {
-            padding: 8px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .filter-container input {
-            flex: 1;
-            min-width: 200px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-        th, td {
-            padding: 12px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 14px;
-        }
-        th {
-            background: #f8fafc;
-            color: #475569;
-        }
-        .status-select {
-            padding: 5px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            border: 1px solid #cbd5e1;
-            cursor: pointer;
-        }
-        .status-FRIENDLY { background: #e0f2fe; color: #0369a1; }
-        .status-URGENT { background: #fee2e2; color: #991b1b; }
-        .status-PAID { background: #dcfce7; color: #166534; }
-        
-        .actions-cell button {
-            padding: 6px 10px;
-            font-size: 12px;
-            margin-right: 4px;
-        }
-        .remind-btn {
-            background: #0284c7;
-        }
-        .remind-btn:hover {
-            background: #0369a1;
-        }
-        .delete-btn {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        .delete-btn:hover {
-            background: #fecaca;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            width: 500px;
-            max-width: 90%;
-        }
-        .modal-content textarea {
-            width: 100%;
-            height: 150px;
-            margin-top: 10px;
-            padding: 8px;
-            font-family: inherit;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Payback AI Dashboard</h1>
+    <div class="login-card">
+        <h2>Payback AI</h2>
+        <p class="subtitle">Sign in to manage your invoices</p>
 
-        <!-- Stats Overview -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Outstanding</h3>
-                <p>${{ "%.2f"|format(stats.total_outstanding) }}</p>
+        <!-- Optional Error Message block if your backend passes an error -->
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+
+        <form action="/login" method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
             </div>
-            <div class="stat-card">
-                <h3>Total Invoices</h3>
-                <p>{{ stats.total_invoices }}</p>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
             </div>
-            <div class="stat-card">
-                <h3>Urgent Notices</h3>
-                <p>{{ stats.urgent_notices }}</p>
-            </div>
-        </div>
-
-        <!-- AI Quick Entry Box -->
-        <div class="section-box ai-box">
-            <h3>AI Quick Entry</h3>
-            <p style="font-size: 13px; color: #64748b; margin-top: 0;">Type naturally (e.g., "John Smith owes me 150 dollars for design work due next Monday")</p>
-            <textarea id="aiPrompt" placeholder="Describe the invoice..."></textarea>
-            <button onclick="submitAIPrompt()" style="margin-top: 10px;" id="aiSubmitBtn">Parse & Add Invoice</button>
-        </div>
-
-        <!-- Manual Entry Form -->
-        <div class="section-box">
-            <h3>Manual Invoice Entry</h3>
-            <form id="manualForm" onsubmit="submitManualInvoice(event)">
-                <div class="form-grid">
-                    <input type="text" id="manId" placeholder="Invoice ID (e.g. INV-001)" required>
-                    <input type="text" id="manClient" placeholder="Client Name" required>
-                    <input type="number" step="0.01" id="manAmount" placeholder="Amount ($)" required>
-                    <input type="date" id="manDueDate" required>
-                    <select id="manStatus">
-                        <option value="FRIENDLY">Friendly</option>
-                        <option value="URGENT">Urgent</option>
-                        <option value="PAID">Paid</option>
-                    </select>
-                </div>
-                <button type="submit" style="background: #0f172a;">Add Invoice Manually</button>
-            </form>
-        </div>
-
-        <!-- Search, Filter, and Export Controls -->
-        <div class="filter-container">
-            <input type="text" id="searchInput" placeholder="Search client or invoice ID..." onkeyup="filterInvoices()">
-            <select id="statusFilter" onchange="filterInvoices()">
-                <option value="ALL">All Statuses</option>
-                <option value="FRIENDLY">Friendly</option>
-                <option value="URGENT">Urgent</option>
-                <option value="PAID">Paid</option>
-            </select>
-            <button onclick="window.location.href='/api/export-csv'" style="background: #059669;">Export CSV</button>
-        </div>
-
-        <!-- Invoice Table -->
-        <table>
-            <thead>
-                <tr>
-                    <th>Invoice ID</th>
-                    <th>Client</th>
-                    <th>Amount</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="invoiceTableBody">
-                {% for inv in invoices %}
-                <tr class="invoice-row" data-status="{{ inv.status }}">
-                    <td>{{ inv.invoice_id }}</td>
-                    <td>{{ inv.client_name }}</td>
-                    <td>${{ "%.2f"|format(inv.amount) }}</td>
-                    <td>{{ inv.due_date }}</td>
-                    <td>
-                        <select class="status-select status-{{ inv.status }}" onchange="updateStatus('{{ inv.invoice_id }}', this)">
-                            <option value="FRIENDLY" {% if inv.status == 'FRIENDLY' %}selected{% endif %}>Friendly</option>
-                            <option value="URGENT" {% if inv.status == 'URGENT' %}selected{% endif %}>Urgent</option>
-                            <option value="PAID" {% if inv.status == 'PAID' %}selected{% endif %}>Paid</option>
-                        </select>
-                    </td>
-                    <td class="actions-cell">
-                        <button class="remind-btn" onclick="openReminder('{{ inv.invoice_id }}')">Remind</button>
-                        <button class="delete-btn" onclick="deleteInvoice('{{ inv.invoice_id }}')">Delete</button>
-                    </td>
-                </tr>
-                {% else %}
-                <tr id="emptyRow">
-                    <td colspan="6" style="text-align: center; color: #64748b;">No invoices found. Add one above!</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <button type="submit">Sign In</button>
+        </form>
     </div>
-
-    <!-- Email Reminder Modal -->
-    <div id="reminderModal" class="modal">
-        <div class="modal-content">
-            <h3 style="margin-top:0;">Client Reminder Draft</h3>
-            <p style="font-size:13px; color:#64748b;">Copy this message to send via email or text:</p>
-            <input type="text" id="emailSubject" style="width:100%; padding:8px; margin-bottom:5px; border:1px solid #cbd5e1; border-radius:4px;" readonly>
-            <textarea id="emailBody" readonly></textarea>
-            <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button onclick="copyReminder()" style="background: #059669;">Copy Text</button>
-                <button onclick="closeReminder()" style="background: #64748b;">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        async function submitAIPrompt() {
-            const promptText = document.getElementById('aiPrompt').value;
-            const btn = document.getElementById('aiSubmitBtn');
-            if (!promptText.trim()) return;
-
-            btn.innerText = "Parsing with AI...";
-            btn.disabled = true;
-
-            try {
-                const response = await fetch('/api/ai-add', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: promptText })
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    location.reload();
-                } else {
-                    alert("Error: " + result.message);
-                    btn.innerText = "Parse & Add Invoice";
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                alert("Network error occurred.");
-                btn.innerText = "Parse & Add Invoice";
-                btn.disabled = false;
-            }
-        }
-
-        async function submitManualInvoice(event) {
-            event.preventDefault();
-            const data = {
-                invoice_id: document.getElementById('manId').value,
-                client_name: document.getElementById('manClient').value,
-                amount: parseFloat(document.getElementById('manAmount').value),
-                due_date: document.getElementById('manDueDate').value,
-                status: document.getElementById('manStatus').value
-            };
-
-            try {
-                const response = await fetch('/add-invoice', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    location.reload();
-                } else {
-                    alert("Error: " + result.message);
-                }
-            } catch (err) {
-                alert("Failed to add manual invoice.");
-            }
-        }
-
-        async function updateStatus(invoiceId, selectElement) {
-            const newStatus = selectElement.value;
-            try {
-                const response = await fetch(`/update-status/${invoiceId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
-                });
-                if (response.ok) location.reload();
-            } catch (err) {
-                alert("Failed to update status.");
-            }
-        }
-
-        async function deleteInvoice(invoiceId) {
-            if (!confirm("Are you sure you want to delete this invoice?")) return;
-            try {
-                const response = await fetch(`/delete-invoice/${invoiceId}`, {
-                    method: 'POST'
-                });
-                if (response.ok) location.reload();
-            } catch (err) {
-                alert("Failed to delete invoice.");
-            }
-        }
-
-        async function openReminder(invoiceId) {
-            try {
-                const res = await fetch(`/api/reminder-email/${invoiceId}`);
-                const data = await res.json();
-                if (res.ok) {
-                    document.getElementById('emailSubject').value = data.subject;
-                    document.getElementById('emailBody').value = data.body;
-                    document.getElementById('reminderModal').style.display = 'flex';
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                alert("Failed to load reminder template.");
-            }
-        }
-
-        function closeReminder() {
-            document.getElementById('reminderModal').style.display = 'none';
-        }
-
-        function copyReminder() {
-            const subject = document.getElementById('emailSubject').value;
-            const body = document.getElementById('emailBody').value;
-            navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
-            alert("Reminder copied to clipboard!");
-        }
-
-        function filterInvoices() {
-            let input = document.getElementById('searchInput').value.toLowerCase();
-            let filter = document.getElementById('statusFilter').value;
-            let rows = document.querySelectorAll('.invoice-row');
-
-            rows.forEach(row => {
-                let text = row.innerText.toLowerCase();
-                let status = row.getAttribute('data-status');
-                
-                let matchesSearch = text.includes(input);
-                let matchesStatus = (filter === 'ALL' || status === filter);
-
-                if (matchesSearch && matchesStatus) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            });
-        }
-    </script>
 </body>
 </html>

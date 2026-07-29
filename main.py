@@ -54,8 +54,6 @@ templates = Jinja2Templates(directory="templates")
 
 
 # --- ROUTES ---
-
-
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     conn = get_db_connection()
@@ -77,9 +75,9 @@ async def home(request: Request):
     }
 
     return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={"invoices": invoices, "stats": stats},
+        request,
+        "index.html",
+        {"invoices": invoices, "stats": stats}
     )
 
 

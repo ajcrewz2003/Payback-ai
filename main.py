@@ -6,9 +6,7 @@ import os
 import random
 import sqlite3
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import smtplib
+import resend
 
 from fastapi import FastAPI, Request
 from fastapi.responses import (
@@ -318,54 +316,55 @@ async def logout():
     response = RedirectResponse(url="/login", status_code=303)
     response.delete_cookie(key="session_user")
     return response
-
 @app.post("/api/send-email/{invoice_id}")
-async def send_invoice_email(invoice_id: str, request: Request):
-    data = await request.json()
-    recipient_email = data.get("email")
-    if not recipient_email:
-        return JSONResponse({"success": False, "status": "error", "message": "Recipient email is required"}, status_code=400)
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    if DATABASE_URL:
-        cursor.execute("SELECT * FROM invoices WHERE invoice_id = %s OR id::text = %s", (invoice_id, invoice_id))
-    else:
-        cursor.execute("SELECT * FROM invoices WHERE invoice_id = ? OR id = ?", (invoice_id, invoice_id))
-    inv = cursor.fetchone()
-    cursor.close()
-    conn.close()
-
-    if not inv:
-        return JSONResponse({"success": False, "status": "error", "message": "Invoice not found"}, status_code=404)
-
-    smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port = int(os.environ.get("SMTP_PORT", 587))
-    sender_email = os.environ.get("SMTP_USER")
-    sender_password = os.environ.get("SMTP_PASSWORD")
-
-    if not sender_email or not sender_password:
-        return JSONResponse({"success": False, "status": "error", "message": "SMTP credentials are not configured."}, status_code=500)
-
-    subject = f"Friendly Reminder: Invoice {inv['invoice_id']} for ${inv['amount']}"
-    body = (
-        f"Hi {inv['client_name']},\n\nI hope you're doing well! This is a quick note to remind you about invoice "
-        f"{inv['invoice_id']} for ${inv['amount']:.2f}, which was due on {inv['due_date']}.\n\n"
-        f"Please let me know when you might be able to process this payment. Thank you so much!\n\nBest regards,\nYour Name"
-    )
-
-    msg = MIMEMultipart()
-    msg["From"] = sender_email
-    msg["To"] = recipient_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
-
+async def send_reminder_email(invoice_id: str, request: Request):
     try:
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, recipient_email, msg.as_string())
-        server.quit()
-        return {"success": True, "status": "success", "message": "Email sent successfully!"}
+        data = await request.json()
+        client_email = data.get("email")
+        
+        if not client_email:
+            return JSONResponse({"success": False, "message": "Client email is required"}, status_code=400)
+
+        # Fetch invoice details from database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        if DATABASE_URL:
+            cursor.execute("SELECT client_name, amount, due_date FROM invoices WHERE invoice_id = %s OR id::text = %s", (invoice_id, invoice_id))
+        else:
+            cursor.execute("SELECT client_name, amount, due_date FROM invoices WHERE invoice_id = ? OR id = ?", (invoice_id, invoice_id))
+        invoice = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not invoice:
+            return JSONResponse({"success": False, "message": "Invoice not found"}, status_code=404)
+
+        client_name, amount, due_date = invoice
+
+        # Set your Resend API Key from environment variables
+        resend.api_Key = os.environ.get("RESEND_API_KEY")
+        sender_email = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev") # Use onboarding@resend.dev for testing if you haven't verified a custom domain
+
+        if not resend.api_Key:
+            return JSONResponse({"success": False, "message": "RESEND_API_KEY is not configured on the server."}, status_code=500)
+
+        html_content = f"""
+        <p>Hi {client_name},</p>
+        <p>This is a quick note to remind you about invoice <strong>{invoice_id}</strong> for <strong>${amount:.2f}</strong>, which was due on <strong>{due_date}</strong>.</p>
+        <p>Please let me know when you might be able to process this payment.</p>
+        <p>Thank you!</p>
+        """
+
+        params = {
+            "from": sender_email,
+            "to": [client_email],
+            "subject": f"Payment Reminder: Invoice {invoice_id}",
+            "html": html_content,
+        }
+
+        email_response = resend.Emails.send(params)
+        return JSONResponse({"success": True, "message": "Email sent successfully!", "data": email_response})
+
     except Exception as e:
-        return JSONResponse({"success": False, "status": "error", "message": f"Failed to send email: {str(e)}"}, status_code=500)
+        print(f"Email Send Error: {str(e)}")
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)

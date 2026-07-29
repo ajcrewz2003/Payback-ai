@@ -1,10 +1,10 @@
-from datetime import datetime
+from contextlib import asynccontextmanager
 import csv
 import io
 import json
 import os
 import sqlite3
-from contextlib import asynccontextmanager
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
@@ -26,7 +26,6 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 def get_db_connection():
-  # If DATABASE_URL is set, use PostgreSQL; otherwise fallback to local sqlite for testing
   if DATABASE_URL:
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     return conn
@@ -40,7 +39,6 @@ def init_db():
   conn = get_db_connection()
   cursor = conn.cursor()
 
-  # PostgreSQL syntax uses SERIAL instead of AUTOINCREMENT
   if DATABASE_URL:
     cursor.execute(
         """
@@ -67,34 +65,6 @@ def init_db():
             )
             """
     )
-  conn.commit()
-  conn.close()
-
-
-DB_FILE = "payback.db"
-
-
-def get_db_connection():
-  conn = sqlite3.connect(DB_FILE)
-  conn.row_factory = sqlite3.Row
-  return conn
-
-
-def init_db():
-  conn = get_db_connection()
-  cursor = conn.cursor()
-  cursor.execute(
-      """
-        CREATE TABLE IF NOT EXISTS invoices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            invoice_id TEXT UNIQUE NOT NULL,
-            client_name TEXT NOT NULL,
-            amount REAL NOT NULL,
-            due_date TEXT,
-            status TEXT DEFAULT 'FRIENDLY'
-        )
-    """
-  )
   conn.commit()
   conn.close()
 
@@ -169,14 +139,19 @@ async def add_invoice(request: Request):
         """
             INSERT INTO invoices (invoice_id, client_name, amount, due_date, status)
             VALUES (?, ?, ?, ?, ?)
+        """
+        if not DATABASE_URL
+        else """
+            INSERT INTO invoices (invoice_id, client_name, amount, due_date, status)
+            VALUES (%s, %s, %s, %s, %s)
         """,
         (inv_id, client, amount, due_date, status),
     )
     conn.commit()
-  except sqlite3.IntegrityError:
+  except Exception:
     conn.close()
     return JSONResponse(
-        {"status": "error", "message": "Invoice ID already exists"},
+        {"status": "error", "message": "Invoice ID already exists or database error"},
         status_code=400,
     )
   finally:
@@ -250,6 +225,11 @@ async def ai_add_invoice(request: Request):
         """
             INSERT INTO invoices (invoice_id, client_name, amount, due_date, status)
             VALUES (?, ?, ?, ?, ?)
+        """
+        if not DATABASE_URL
+        else """
+            INSERT INTO invoices (invoice_id, client_name, amount, due_date, status)
+            VALUES (%s, %s, %s, %s, %s)
         """,
         (inv_id, client_name, amount, due_date, status),
     )
@@ -260,17 +240,9 @@ async def ai_add_invoice(request: Request):
         {"status": "success", "message": "AI invoice created successfully!"}
     )
 
-  except sqlite3.IntegrityError:
-    return JSONResponse(
-        {
-            "status": "error",
-            "message": "AI generated an ID that already exists. Try again.",
-        },
-        status_code=400,
-    )
   except Exception as e:
     return JSONResponse(
-        {"status": "error", "message": f"AI Parsing failed: {str(e)}"},
+        {"status": "error", "message": f"AI Parsing or DB failed: {str(e)}"},
         status_code=500,
     )
 
@@ -307,10 +279,14 @@ async def export_csv():
 @app.get("/api/reminder-email/{invoice_id}")
 async def get_reminder_email(invoice_id: str):
   conn = get_db_connection()
-  inv = conn.execute(
-      "SELECT * FROM invoices WHERE invoice_id = ? OR id = ?",
+  cursor = conn.cursor()
+  cursor.execute(
+      "SELECT * FROM invoices WHERE invoice_id = ? OR id = ?"
+      if not DATABASE_URL
+      else "SELECT * FROM invoices WHERE invoice_id = %s OR id::text = %s",
       (invoice_id, invoice_id),
-  ).fetchone()
+  )
+  inv = cursor.fetchone()
   conn.close()
 
   if not inv:
@@ -339,12 +315,17 @@ async def update_status(invoice_id: str, request: Request):
   cursor = conn.cursor()
 
   cursor.execute(
-      "UPDATE invoices SET status = ? WHERE invoice_id = ?",
+      "UPDATE invoices SET status = ? WHERE invoice_id = ?"
+      if not DATABASE_URL
+      else "UPDATE invoices SET status = %s WHERE invoice_id = %s",
       (new_status, invoice_id),
   )
   if cursor.rowcount == 0:
     cursor.execute(
-        "UPDATE invoices SET status = ? WHERE id = ?", (new_status, invoice_id)
+        "UPDATE invoices SET status = ? WHERE id = ?"
+        if not DATABASE_URL
+        else "UPDATE invoices SET status = %s WHERE id::text = %s",
+        (new_status, invoice_id),
     )
 
   conn.commit()
@@ -362,9 +343,19 @@ async def delete_invoice(invoice_id: str):
   conn = get_db_connection()
   cursor = conn.cursor()
 
-  cursor.execute("DELETE FROM invoices WHERE invoice_id = ?", (invoice_id,))
+  cursor.execute(
+      "DELETE FROM invoices WHERE invoice_id = ?"
+      if not DATABASE_URL
+      else "DELETE FROM invoices WHERE invoice_id = %s",
+      (invoice_id,),
+  )
   if cursor.rowcount == 0:
-    cursor.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))
+    cursor.execute(
+        "DELETE FROM invoices WHERE id = ?"
+        if not DATABASE_URL
+        else "DELETE FROM invoices WHERE id::text = %s",
+        (invoice_id,),
+    )
 
   conn.commit()
   conn.close()
@@ -417,10 +408,14 @@ async def send_invoice_email(invoice_id: str, request: Request):
     )
 
   conn = get_db_connection()
-  inv = conn.execute(
-      "SELECT * FROM invoices WHERE invoice_id = ? OR id = ?",
+  cursor = conn.cursor()
+  cursor.execute(
+      "SELECT * FROM invoices WHERE invoice_id = ? OR id = ?"
+      if not DATABASE_URL
+      else "SELECT * FROM invoices WHERE invoice_id = %s OR id::text = %s",
       (invoice_id, invoice_id),
-  ).fetchone()
+  )
+  inv = cursor.fetchone()
   conn.close()
 
   if not inv:
@@ -428,7 +423,6 @@ async def send_invoice_email(invoice_id: str, request: Request):
         {"status": "error", "message": "Invoice not found"}, status_code=404
     )
 
-  # Email credentials from environment variables
   smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
   smtp_port = int(os.environ.get("SMTP_PORT", 587))
   sender_email = os.environ.get("SMTP_USER")
@@ -438,9 +432,7 @@ async def send_invoice_email(invoice_id: str, request: Request):
     return JSONResponse(
         {
             "status": "error",
-            "message": (
-                "SMTP credentials are not configured on the server."
-            ),
+            "message": "SMTP credentials are not configured on the server.",
         },
         status_code=500,
     )

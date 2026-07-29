@@ -340,6 +340,7 @@ async def send_reminder_email(invoice_id: str, request: Request):
             return JSONResponse({"success": False, "message": "Invoice not found"}, status_code=404)
 
         client_name, amount, due_date = invoice
+        amount= float(amount)
 
         # Set your Resend API Key from environment variables
         resend.api_Key = os.environ.get("RESEND_API_KEY")

@@ -13,12 +13,10 @@ from datetime import datetime
 
 DB_FILE = "payback.db"
 
-
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def init_db():
     conn = get_db_connection()
@@ -38,12 +36,10 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     yield
-
 
 app = FastAPI(title="Payback AI", lifespan=lifespan)
 
@@ -52,8 +48,8 @@ if os.path.exists("static"):
 
 templates = Jinja2Templates(directory="templates")
 
-
 # --- ROUTES ---
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     conn = get_db_connection()
@@ -77,9 +73,8 @@ async def home(request: Request):
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"invoices": invoices, "stats": stats}
+        {"invoices": invoices, "stats": stats},
     )
-
 
 @app.post("/add-invoice")
 @app.post("/api/invoices")
@@ -127,9 +122,7 @@ async def add_invoice(request: Request):
         {"status": "success", "message": "Invoice created successfully"}
     )
 
-
 # --- OPENAI PARSER ENDPOINT ---
-
 
 @app.post("/api/ai-add")
 async def ai_add_invoice(request: Request):
@@ -138,9 +131,7 @@ async def ai_add_invoice(request: Request):
         return JSONResponse(
             {
                 "status": "error",
-                "message": (
-                    "OPENAI_API_KEY environment variable is missing on Render."
-                ),
+                "message": "OPENAI_API_KEY environment variable is missing on Render.",
             },
             status_code=500,
         )
@@ -155,21 +146,19 @@ async def ai_add_invoice(request: Request):
         )
 
     client = OpenAI(api_key=api_key)
-
-    # Get the current live date and format it nicely
     current_date_str = datetime.now().strftime("%Y-%m-%d (%A)")
 
     system_instruction = (
-    "Extract invoice details from user text. Return structured JSON with "
-    "keys:\n- invoice_id: string (generate short unique code like Inv_101)\n"
-    "- if missing\n- client_name: string (person or company name)\n-"
-    "amount: number (float value)\n- due_date: string (YYYY-MM-DD or "
-    "readable date string)\n- status: string (must be exactly 'FRIENDLY', "
-    "'URGENT', or 'PAID')\n\n"
-    f"CRITICAL CONTEXT: The current active calendar date is {current_date_str}. "
-    "Always calculate any relative dates (like 'next week', 'tomorrow', or 'in 5 days') "
-    f"relative to this current date ({current_date_str})."
-)
+        "Extract invoice details from user text. Return structured JSON with "
+        "keys:\n- invoice_id: string (generate short unique code like Inv_101)\n"
+        "- client_name: string (person or company name)\n"
+        "- amount: number (float value)\n- due_date: string (YYYY-MM-DD or "
+        "readable date string)\n- status: string (must be exactly 'FRIENDLY', "
+        "'URGENT', or 'PAID')\n\n"
+        f"CRITICAL CONTEXT: The current active calendar date is {current_date_str}. "
+        "Always calculate any relative dates (like 'next week', 'tomorrow', or 'in 5 days') "
+        f"relative to this current date ({current_date_str})."
+    )
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -210,9 +199,7 @@ async def ai_add_invoice(request: Request):
         return JSONResponse(
             {
                 "status": "error",
-                "message": (
-                    "AI generated an ID that already exists. Try again."
-                ),
+                "message": "AI generated an ID that already exists. Try again.",
             },
             status_code=400,
         )
@@ -221,7 +208,6 @@ async def ai_add_invoice(request: Request):
             {"status": "error", "message": f"AI Parsing failed: {str(e)}"},
             status_code=500,
         )
-
 
 @app.get("/api/export-csv")
 async def export_csv():
@@ -233,7 +219,6 @@ async def export_csv():
 
     output = io.StringIO()
     writer = csv.writer(output)
-
     writer.writerow(["Invoice ID", "Client Name", "Amount", "Due Date", "Status"])
 
     for inv in invoices:
@@ -248,7 +233,6 @@ async def export_csv():
         )
 
     output.seek(0)
-
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
@@ -256,7 +240,6 @@ async def export_csv():
             "Content-Disposition": "attachment; filename=invoices_export.csv"
         },
     )
-
 
 @app.get("/api/reminder-email/{invoice_id}")
 async def get_reminder_email(invoice_id: str):
@@ -283,7 +266,6 @@ async def get_reminder_email(invoice_id: str):
 
     return {"subject": subject, "body": body}
 
-
 @app.post("/update-status/{invoice_id}")
 async def update_status(invoice_id: str, request: Request):
     data = await request.json()
@@ -309,7 +291,6 @@ async def update_status(invoice_id: str, request: Request):
         {"status": "success", "message": "Status updated successfully"}
     )
 
-
 @app.post("/delete-invoice/{invoice_id}")
 @app.post("/delete/{invoice_id}")
 @app.delete("/api/invoices/{invoice_id}")
@@ -318,7 +299,7 @@ async def delete_invoice(invoice_id: str):
     cursor = conn.cursor()
 
     cursor.execute("DELETE FROM invoices WHERE invoice_id = ?", (invoice_id,))
-    if cursor.rowcount == "0" or cursor.rowcount == 0:
+    if cursor.rowcount == 0:
         cursor.execute("DELETE FROM invoices WHERE id = ?", (invoice_id,))
 
     conn.commit()
@@ -327,7 +308,6 @@ async def delete_invoice(invoice_id: str):
     return JSONResponse(
         {"status": "success", "message": "Invoice deleted successfully"}
     )
-from fastapi.responses import RedirectResponse
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -339,27 +319,6 @@ async def login_action(request: Request):
     username = form.get("username")
     password = form.get("password")
     
-    # Add your validation logic here (e.g., check against env variables or database)
-    if username == "admin" and password == "admin": # Change to your credentials
-        response = RedirectResponse(url="/", status_code=303)
-        response.set_cookie(key="session_user", value=username)
-        return response
-    
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password"})
-
-from fastapi.responses import RedirectResponse
-
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
-@app.post("/login")
-async def login_action(request: Request):
-    form = await request.form()
-    username = form.get("username")
-    password = form.get("password")
-    
-    # Simple check - change username/password as needed
     if username == "admin" and password == "admin":
         response = RedirectResponse(url="/", status_code=303)
         response.set_cookie(key="session_user", value=str(username))

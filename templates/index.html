@@ -109,6 +109,7 @@
                             <td class="p-4 text-right space-x-2">
                                 <button onclick="sendEmailModal('{{ inv.invoice_id }}')" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 px-3 py-1 rounded transition text-xs font-medium">Email Reminder</button>
                                 <button onclick="deleteInvoice('{{ inv.invoice_id }}')" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 px-3 py-1 rounded transition text-xs font-medium">Delete</button>
+                                <button onclick="openEditModal('{{ inv.invoice_id }}', '{{ inv.client_name }}', '{{ inv.amount }}', '{{ inv.due_date }}', '{{ inv.status }}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-medium">Edit</button>
                             </td>
                         </tr>
                         {% else %}
@@ -250,5 +251,48 @@
             }
         });
     </script>
+    <!-- Edit Invoice Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-gray-900 border border-gray-800 p-6 rounded-xl w-full max-w-md shadow-xl text-white">
+        <h3 class="text-lg font-semibold mb-4">Edit Invoice</h3>
+        <form id="editForm" onsubmit="submitEditInvoice(event)">
+            <input type="hidden" id="editOriginalId">
+            
+            <div class="mb-3">
+                <label class="block text-xs text-gray-400 mb-1">Invoice ID</label>
+                <input type="text" id="editInvoiceId" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="block text-xs text-gray-400 mb-1">Client Name</label>
+                <input type="text" id="editClientName" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="block text-xs text-gray-400 mb-1">Amount ($)</label>
+                <input type="number" step="0.01" id="editAmount" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="block text-xs text-gray-400 mb-1">Due Date</label>
+                <input type="text" id="editDueDate" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs text-gray-400 mb-1">Status</label>
+                <select id="editStatus" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white">
+                    <option value="FRIENDLY">FRIENDLY</option>
+                    <option value="URGENT">URGENT</option>
+                    <option value="PAID">PAID</option>
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 </html>

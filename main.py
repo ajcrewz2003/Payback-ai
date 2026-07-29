@@ -149,24 +149,24 @@ async def add_invoice(request: Request):
         cursor.close()
         conn.close()
     except Exception as e:
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=400)
+        return JSONResponse({"success": False, "message": str(e)}, status_code=400)
 
-    return JSONResponse({"status": "success", "message": "Invoice created successfully"})
+    return JSONResponse({"success": True, "message": "Invoice created successfully"})
 
 @app.post("/api/ai-add")
 async def ai_add_invoice(request: Request):
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        return JSONResponse({"status": "error", "message": "OPENAI_API_KEY is missing."}, status_code=500)
+        return JSONResponse({"success": False, "message": "OPENAI_API_KEY is missing."}, status_code=500)
 
     try:
         data = await request.json()
     except Exception:
-        return JSONResponse({"status": "error", "message": "Invalid JSON payload"}, status_code=400)
+        return JSONResponse({"success": False, "message": "Invalid JSON payload"}, status_code=400)
 
     user_prompt = data.get("prompt", "")
     if not user_prompt:
-        return JSONResponse({"status": "error", "message": "Prompt cannot be empty"}, status_code=400)
+        return JSONResponse({"success": False, "message": "Prompt cannot be empty"}, status_code=400)
 
     try:
         client = OpenAI(api_key=api_key)
@@ -214,11 +214,11 @@ async def ai_add_invoice(request: Request):
         conn.commit()
         cursor.close()
         conn.close()
-        return JSONResponse({"status": "success", "message": "AI invoice created successfully!"})
+        return JSONResponse({"success": True, "message": "AI invoice created successfully!"})
     except Exception as e:
         print(f"AI Add Error Details: {str(e)}")
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-    
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
 @app.get("/api/export-csv")
 async def export_csv():
     conn = get_db_connection()
@@ -254,7 +254,7 @@ async def get_reminder_email(invoice_id: str):
     conn.close()
 
     if not inv:
-        return JSONResponse({"status": "error", "message": "Invoice not found"}, status_code=404)
+        return JSONResponse({"success": False, "message": "Invoice not found"}, status_code=404)
 
     subject = f"Friendly Reminder: Invoice {inv['invoice_id']} for ${inv['amount']}"
     body = (
@@ -277,7 +277,7 @@ async def update_status(invoice_id: str, request: Request):
     conn.commit()
     cursor.close()
     conn.close()
-    return JSONResponse({"status": "success", "message": "Status updated successfully"})
+    return JSONResponse({"success": True, "message": "Status updated successfully"})
 
 @app.post("/delete-invoice/{invoice_id}")
 @app.post("/delete/{invoice_id}")
@@ -292,7 +292,7 @@ async def delete_invoice(invoice_id: str):
     conn.commit()
     cursor.close()
     conn.close()
-    return JSONResponse({"status": "success", "message": "Invoice deleted successfully"})
+    return JSONResponse({"success": True, "message": "Invoice deleted successfully"})
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -320,7 +320,7 @@ async def send_invoice_email(invoice_id: str, request: Request):
     data = await request.json()
     recipient_email = data.get("email")
     if not recipient_email:
-        return JSONResponse({"status": "error", "message": "Recipient email is required"}, status_code=400)
+        return JSONResponse({"success": False, "message": "Recipient email is required"}, status_code=400)
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -333,7 +333,7 @@ async def send_invoice_email(invoice_id: str, request: Request):
     conn.close()
 
     if not inv:
-        return JSONResponse({"status": "error", "message": "Invoice not found"}, status_code=404)
+        return JSONResponse({"success": False, "message": "Invoice not found"}, status_code=404)
 
     smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
     smtp_port = int(os.environ.get("SMTP_PORT", 587))
@@ -341,7 +341,7 @@ async def send_invoice_email(invoice_id: str, request: Request):
     sender_password = os.environ.get("SMTP_PASSWORD")
 
     if not sender_email or not sender_password:
-        return JSONResponse({"status": "error", "message": "SMTP credentials are not configured."}, status_code=500)
+        return JSONResponse({"success": False, "message": "SMTP credentials are not configured."}, status_code=500)
 
     subject = f"Friendly Reminder: Invoice {inv['invoice_id']} for ${inv['amount']}"
     body = (
@@ -362,6 +362,6 @@ async def send_invoice_email(invoice_id: str, request: Request):
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, recipient_email, msg.as_string())
         server.quit()
-        return {"status": "success", "message": "Email sent successfully!"}
+        return {"success": True, "message": "Email sent successfully!"}
     except Exception as e:
-        return JSONResponse({"status": "error", "message": f"Failed to send email: {str(e)}"}, status_code=500)
+        return JSONResponse({"success": False, "message": f"Failed to send email: {str(e)}"}, status_code=500)

@@ -311,8 +311,11 @@ async def delete_invoice(invoice_id: str):
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"request": request}
+    )
 @app.post("/login")
 async def login_action(request: Request):
     form = await request.form()
@@ -323,9 +326,12 @@ async def login_action(request: Request):
         response = RedirectResponse(url="/", status_code=303)
         response.set_cookie(key="session_user", value=str(username))
         return response
-    
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
-
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"request": request, "error": "Invalid credentials"}
+    )
+   
 @app.get("/logout")
 async def logout():
     response = RedirectResponse(url="/login", status_code=303)

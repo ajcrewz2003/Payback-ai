@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI
+from datetime import datetime
 
 DB_FILE = "payback.db"
 
@@ -157,15 +158,20 @@ async def ai_add_invoice(request: Request):
 
     client = OpenAI(api_key=api_key)
 
-    system_instruction = (
-        "Extract invoice details from user text. Return structured JSON with"
-        " keys:\n- invoice_id: string (generate short unique code like Inv_101"
-        " if missing)\n- client_name: string (person or company name)\n-"
-        " amount: number (float value)\n- due_date: string (YYYY-MM-DD or"
-        " readable date string)\n- status: string (must be exactly 'FRIENDLY',"
-        " 'URGENT', or 'PAID')"
-    )
+    # Get the current live date and format it nicely
+    current_date_str = datetime.now().strftime("%Y-%m-%d (%A)")
 
+    system_instruction = (
+    "Extract invoice details from user text. Return structured JSON with "
+    "keys:\n- invoice_id: string (generate short unique code like Inv_101)\n"
+    "- if missing\n- client_name: string (person or company name)\n-"
+    "amount: number (float value)\n- due_date: string (YYYY-MM-DD or "
+    "readable date string)\n- status: string (must be exactly 'FRIENDLY', "
+    "'URGENT', or 'PAID')\n\n"
+    f"CRITICAL CONTEXT: The current active calendar date is {current_date_str}. "
+    "Always calculate any relative dates (like 'next week', 'tomorrow', or 'in 5 days') "
+    f"relative to this current date ({current_date_str})."
+)
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",

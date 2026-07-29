@@ -30,11 +30,37 @@
         </div>
 
         <!-- AI Quick Entry -->
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-sm mb-8">
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-sm mb-6">
             <h2 class="text-lg font-medium mb-4">AI Quick Entry</h2>
             <form id="ai-form" class="space-y-4">
                 <textarea id="ai-prompt" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-indigo-500" placeholder="e.g., John Smith owes me 150 dollars for design work due next Monday"></textarea>
                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition">Parse & Add Invoice</button>
+            </form>
+        </div>
+
+        <!-- Manual Invoice Entry -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-sm mb-8">
+            <h2 class="text-lg font-medium mb-4">Manual Invoice Entry</h2>
+            <form id="manual-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Invoice ID</label>
+                    <input type="text" id="manual-invoice-id" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500" placeholder="INV-001">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Client Name</label>
+                    <input type="text" id="manual-client-name" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500" placeholder="Client Name">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Amount ($)</label>
+                    <input type="number" step="0.01" id="manual-amount" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Due Date</label>
+                    <input type="date" id="manual-due-date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-white p-2.5 rounded-lg text-sm font-medium transition">Add Manually</button>
+                </div>
             </form>
         </div>
 
@@ -78,7 +104,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="p-6 text-center text-slate-400">No invoices found. Use AI entry above to create one!</td>
+                            <td colspan="6" class="p-6 text-center text-slate-400">No invoices found. Use AI entry or manual entry above to create one!</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -120,6 +146,24 @@
             });
             if (res.ok) location.reload();
             else alert('Failed to create invoice via AI.');
+        });
+
+        document.getElementById('manual-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                invoice_id: document.getElementById('manual-invoice-id').value,
+                client_name: document.getElementById('manual-client-name').value,
+                amount: parseFloat(document.getElementById('manual-amount').value),
+                due_date: document.getElementById('manual-due-date').value,
+                status: 'FRIENDLY'
+            };
+            const res = await fetch('/add-invoice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) location.reload();
+            else alert('Failed to create manual invoice.');
         });
 
         async function deleteInvoice(id) {

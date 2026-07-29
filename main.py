@@ -10,10 +10,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI
 from datetime import datetime
-
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
+
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+except ImportError:
+    psycopg2 = None
+    RealDictCursor = None
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 

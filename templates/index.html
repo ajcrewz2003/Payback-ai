@@ -396,6 +396,30 @@
                 alert("Failed to load reminder template.");
             }
         }
+        async function sendReminder(invoiceId) {
+    const email = prompt("Enter client's email address to send reminder:");
+    if (!email) return;
+
+    try {
+        const response = await fetch(`/api/send-email/${invoiceId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email: email })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            alert("Reminder email sent successfully!");
+        } else {
+            alert("Error: " + result.message);
+        }
+    } catch (err) {
+        alert("Failed to send reminder email.");
+        console.error(err);
+    }
+}
 
         function closeReminder() {
             document.getElementById('reminderModal').style.display = 'none';

@@ -11,6 +11,56 @@ from fastapi.templating import Jinja2Templates
 from openai import OpenAI
 from datetime import datetime
 
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+def get_db_connection():
+    # If DATABASE_URL is set, use PostgreSQL; otherwise fallback to local sqlite for testing
+    if DATABASE_URL:
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        return conn
+    else:
+        conn = sqlite3.connect("payback.db")
+        conn.row_factory = sqlite3.Row
+        return conn
+
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # PostgreSQL syntax uses SERIAL instead of AUTOINCREMENT
+    if DATABASE_URL:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS invoices (
+                id SERIAL PRIMARY KEY,
+                invoice_id TEXT UNIQUE NOT NULL,
+                client_name TEXT NOT NULL,
+                amount REAL NOT NULL,
+                due_date TEXT,
+                status TEXT DEFAULT 'FRIENDLY'
+            )
+            """
+        )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS invoices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_id TEXT UNIQUE NOT NULL,
+                client_name TEXT NOT NULL,
+                amount REAL NOT NULL,
+                due_date TEXT,
+                status TEXT DEFAULT 'FRIENDLY'
+            )
+            """
+        )
+    conn.commit()
+    conn.close()
+
 DB_FILE = "payback.db"
 
 def get_db_connection():

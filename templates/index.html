@@ -147,14 +147,34 @@
     <script>
         document.getElementById('ai-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const prompt = document.getElementById('ai-prompt').value;
-            const res = await fetch('/api/ai-add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
-            });
-            if (res.ok) location.reload();
-            else alert('Failed to create invoice via AI.');
+            const promptInput = document.getElementById('ai-prompt');
+            const prompt = promptInput.value;
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Processing AI...';
+            submitBtn.disabled = true;
+
+            try {
+                const res = await fetch('/api/ai-add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    promptInput.value = '';
+                    window.location.href = '/';
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to create invoice via AI.'));
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                alert('Network error connecting to AI endpoint.');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
         });
 
         document.getElementById('manual-form').addEventListener('submit', async (e) => {

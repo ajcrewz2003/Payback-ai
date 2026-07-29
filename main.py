@@ -175,7 +175,7 @@ async def ai_add_invoice(request: Request):
 
         system_instruction = (
             "Extract invoice details from user text. Return structured JSON with keys:\n"
-            "- invoice_id: string (generate a completely unique short code like Inv_ followed by random digits or letters, e.g., Inv_9842)\n"
+            "- invoice_id: string\n"
             "- client_name: string (person or company name)\n"
             "- amount: number (float value)\n"
             "- due_date: string (YYYY-MM-DD or readable date string)\n"
@@ -193,10 +193,8 @@ async def ai_add_invoice(request: Request):
         )
         extracted = json.loads(response.choices[0].message.content)
         
-        # Ensure fallback uniqueness
-        inv_id = extracted.get("invoice_id")
-        if not inv_id or inv_id == "Inv_101":
-            inv_id = f"Inv_{random.randint(1000, 9999)}"
+        # FORCE a completely unique invoice ID to avoid any 'Inv_101' collision conflicts
+        inv_id = f"Inv_{random.randint(10000, 99999)}"
             
         client_name = extracted.get("client_name", "Unknown")
         amount = float(extracted.get("amount", 0))
@@ -224,7 +222,6 @@ async def ai_add_invoice(request: Request):
     except Exception as e:
         print(f"AI Add Error Details: {str(e)}")
         return JSONResponse({"success": False, "status": "error", "message": str(e)}, status_code=500)
-
 @app.get("/api/export-csv")
 async def export_csv():
     conn = get_db_connection()

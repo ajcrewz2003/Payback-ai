@@ -191,7 +191,6 @@ async def ai_add_invoice(request: Request):
         )
         extracted = json.loads(response.choices[0].message.content)
         
-        # FORCE a completely unique invoice ID to avoid any 'Inv_101' collision conflicts
         inv_id = f"Inv_{random.randint(10000, 99999)}"
             
         client_name = extracted.get("client_name", "Unknown")
@@ -220,6 +219,7 @@ async def ai_add_invoice(request: Request):
     except Exception as e:
         print(f"AI Add Error Details: {str(e)}")
         return JSONResponse({"success": False, "status": "error", "message": str(e)}, status_code=500)
+
 @app.get("/api/export-csv")
 async def export_csv():
     conn = get_db_connection()
@@ -260,7 +260,7 @@ async def get_reminder_email(invoice_id: str):
     subject = f"Friendly Reminder: Invoice {inv['invoice_id']} for ${inv['amount']}"
     body = (
         f"Hi {inv['client_name']},\n\nI hope you're doing well! This is a quick note to remind you about invoice "
-        f"{inv['invoice_id']} for ${inv['amount']:.2f}, which was due on {inv['due_date']}.\n\n"
+        f"{inv['invoice_id']} for ${float(inv['amount']):.2f}, which was due on {inv['due_date']}.\n\n"
         f"Please let me know when you might be able to process this payment. Thank you so much!\n\nBest regards,\nYour Name"
     )
     return {"subject": subject, "body": body}
@@ -316,6 +316,7 @@ async def logout():
     response = RedirectResponse(url="/login", status_code=303)
     response.delete_cookie(key="session_user")
     return response
+
 @app.post("/api/send-email/{invoice_id}")
 async def send_reminder_email(invoice_id: str, request: Request):
     try:
@@ -325,7 +326,6 @@ async def send_reminder_email(invoice_id: str, request: Request):
         if not client_email:
             return JSONResponse({"success": False, "message": "Client email is required"}, status_code=400)
 
-        # Fetch invoice details from database
         conn = get_db_connection()
         cursor = conn.cursor()
         if DATABASE_URL:
@@ -339,14 +339,13 @@ async def send_reminder_email(invoice_id: str, request: Request):
         if not invoice:
             return JSONResponse({"success": False, "message": "Invoice not found"}, status_code=404)
 
-        client_name, amount, due_date = invoice
-        amount= float(amount)
+        client_name, raw_amount, due_date = invoice
+        amount = float(raw_amount)
 
-        # Set your Resend API Key from environment variables
-        resend.api_Key = os.environ.get("RESEND_API_KEY")
-        sender_email = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev") # Use onboarding@resend.dev for testing if you haven't verified a custom domain
+        resend.api_key = os.environ.get("RESEND_API_KEY")
+        sender_email = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 
-        if not resend.api_Key:
+        if not resend.api_key:
             return JSONResponse({"success": False, "message": "RESEND_API_KEY is not configured on the server."}, status_code=500)
 
         html_content = f"""

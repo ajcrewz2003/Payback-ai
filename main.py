@@ -329,9 +329,9 @@ async def send_reminder_email(invoice_id: str, request: Request):
         conn = get_db_connection()
         cursor = conn.cursor()
         if DATABASE_URL:
-            cursor.execute("SELECT client_name, amount, due_date FROM invoices WHERE invoice_id = %s OR id::text = %s", (invoice_id, invoice_id))
+            cursor.execute("SELECT * FROM invoices WHERE invoice_id = %s OR id::text = %s", (invoice_id, invoice_id))
         else:
-            cursor.execute("SELECT client_name, amount, due_date FROM invoices WHERE invoice_id = ? OR id = ?", (invoice_id, invoice_id))
+            cursor.execute("SELECT * FROM invoices WHERE invoice_id = ? OR id = ?", (invoice_id, invoice_id))
         invoice = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -339,8 +339,10 @@ async def send_reminder_email(invoice_id: str, request: Request):
         if not invoice:
             return JSONResponse({"success": False, "message": "Invoice not found"}, status_code=404)
 
-        client_name, raw_amount, due_date = invoice
-        amount = float(raw_amount)
+        # Safely extract values using dictionary keys to prevent any type or order errors
+        client_name = invoice["client_name"]
+        amount = float(invoice["amount"])
+        due_date = invoice["due_date"]
 
         resend.api_key = os.environ.get("RESEND_API_KEY")
         sender_email = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")

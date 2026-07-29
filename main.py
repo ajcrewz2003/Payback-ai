@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import os
+import random
 import sqlite3
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -149,7 +150,7 @@ async def add_invoice(request: Request):
         cursor.close()
         conn.close()
     except Exception as e:
-        return JSONResponse({"success": True, "status": "success", "message": str(e)}, status_code=400)
+        return JSONResponse({"success": False, "status": "error", "message": str(e)}, status_code=400)
 
     return JSONResponse({"success": True, "status": "success", "message": "Invoice created successfully"})
 
@@ -174,7 +175,7 @@ async def ai_add_invoice(request: Request):
 
         system_instruction = (
             "Extract invoice details from user text. Return structured JSON with keys:\n"
-            "- invoice_id: string (generate short unique code like Inv_101)\n"
+            "- invoice_id: string (generate a completely unique short code like Inv_ followed by random digits or letters, e.g., Inv_9842)\n"
             "- client_name: string (person or company name)\n"
             "- amount: number (float value)\n"
             "- due_date: string (YYYY-MM-DD or readable date string)\n"
@@ -191,7 +192,12 @@ async def ai_add_invoice(request: Request):
             response_format={"type": "json_object"},
         )
         extracted = json.loads(response.choices[0].message.content)
-        inv_id = extracted.get("invoice_id", f"Inv_{int(datetime.now().timestamp())}")
+        
+        # Ensure fallback uniqueness
+        inv_id = extracted.get("invoice_id")
+        if not inv_id or inv_id == "Inv_101":
+            inv_id = f"Inv_{random.randint(1000, 9999)}"
+            
         client_name = extracted.get("client_name", "Unknown")
         amount = float(extracted.get("amount", 0))
         due_date = extracted.get("due_date", "")

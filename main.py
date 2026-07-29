@@ -159,24 +159,29 @@ async def ai_add_invoice(request: Request):
     if not api_key:
         return JSONResponse({"status": "error", "message": "OPENAI_API_KEY is missing."}, status_code=500)
 
-    data = await request.json()
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid JSON payload"}, status_code=400)
+
     user_prompt = data.get("prompt", "")
     if not user_prompt:
         return JSONResponse({"status": "error", "message": "Prompt cannot be empty"}, status_code=400)
 
-    client = OpenAI(api_key=api_key)
-    current_date_str = datetime.now().strftime("%Y-%m-%d (%A)")
-
-    system_instruction = (
-        "Extract invoice details from user text. Return structured JSON with keys:\n"
-        "- invoice_id: string (generate short unique code like Inv_101)\n"
-        "- client_name: string (person or company name)\n"
-        "- amount: number (float value)\n"
-        "- due_date: string (YYYY-MM-DD or readable date string)\n"
-        "- status: string (must be exactly 'FRIENDLY', 'URGENT', or 'PAID')\n\n"
-        f"CRITICAL CONTEXT: The current active calendar date is {current_date_str}."
-    )
     try:
+        client = OpenAI(api_key=api_key)
+        current_date_str = datetime.now().strftime("%Y-%m-%d (%A)")
+
+        system_instruction = (
+            "Extract invoice details from user text. Return structured JSON with keys:\n"
+            "- invoice_id: string (generate short unique code like Inv_101)\n"
+            "- client_name: string (person or company name)\n"
+            "- amount: number (float value)\n"
+            "- due_date: string (YYYY-MM-DD or readable date string)\n"
+            "- status: string (must be exactly 'FRIENDLY', 'URGENT', or 'PAID')\n\n"
+            f"CRITICAL CONTEXT: The current active calendar date is {current_date_str}."
+        )
+
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -211,8 +216,9 @@ async def ai_add_invoice(request: Request):
         conn.close()
         return JSONResponse({"status": "success", "message": "AI invoice created successfully!"})
     except Exception as e:
+        print(f"AI Add Error Details: {str(e)}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
-
+    
 @app.get("/api/export-csv")
 async def export_csv():
     conn = get_db_connection()

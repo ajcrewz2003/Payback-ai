@@ -145,6 +145,50 @@
         </div>
     </div>
 
+    <!-- Edit Invoice Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl w-full max-w-md shadow-xl text-white">
+            <h3 class="text-lg font-semibold mb-4">Edit Invoice</h3>
+            <form id="editForm" onsubmit="submitEditInvoice(event)">
+                <input type="hidden" id="editOriginalId">
+                
+                <div class="mb-3">
+                    <label class="block text-xs text-slate-400 mb-1">Invoice ID</label>
+                    <input type="text" id="editInvoiceId" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs text-slate-400 mb-1">Client Name</label>
+                    <input type="text" id="editClientName" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs text-slate-400 mb-1">Amount ($)</label>
+                    <input type="number" step="0.01" id="editAmount" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-xs text-slate-400 mb-1">Due Date</label>
+                    <input type="text" id="editDueDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs text-slate-400 mb-1">Status</label>
+                    <select id="editStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        <option value="FRIENDLY">FRIENDLY</option>
+                        <option value="URGENT">URGENT</option>
+                        <option value="PAID">PAID</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-sm font-medium transition">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         document.getElementById('ai-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -250,49 +294,49 @@
                 alert('Error: ' + data.message);
             }
         });
+
+        // Edit Modal Functions
+        function openEditModal(invoiceId, clientName, amount, dueDate, status) {
+            document.getElementById('editOriginalId').value = invoiceId;
+            document.getElementById('editInvoiceId').value = invoiceId;
+            document.getElementById('editClientName').value = clientName;
+            document.getElementById('editAmount').value = amount;
+            document.getElementById('editDueDate').value = dueDate;
+            document.getElementById('editStatus').value = status;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        async function submitEditInvoice(event) {
+            event.preventDefault();
+            const originalId = document.getElementById('editOriginalId').value;
+            const payload = {
+                invoice_id: document.getElementById('editInvoiceId').value,
+                client_name: document.getElementById('editClientName').value,
+                amount: parseFloat(document.getElementById('editAmount').value),
+                due_date: document.getElementById('editDueDate').value,
+                status: document.getElementById('editStatus').value
+            };
+
+            try {
+                const response = await fetch(`/api/invoices/${originalId}/edit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert('Error updating invoice: ' + result.message);
+                }
+            } catch (err) {
+                alert('Network error while updating invoice.');
+            }
+        }
     </script>
-    <!-- Edit Invoice Modal -->
-<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-gray-900 border border-gray-800 p-6 rounded-xl w-full max-w-md shadow-xl text-white">
-        <h3 class="text-lg font-semibold mb-4">Edit Invoice</h3>
-        <form id="editForm" onsubmit="submitEditInvoice(event)">
-            <input type="hidden" id="editOriginalId">
-            
-            <div class="mb-3">
-                <label class="block text-xs text-gray-400 mb-1">Invoice ID</label>
-                <input type="text" id="editInvoiceId" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white" required>
-            </div>
-
-            <div class="mb-3">
-                <label class="block text-xs text-gray-400 mb-1">Client Name</label>
-                <input type="text" id="editClientName" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white" required>
-            </div>
-
-            <div class="mb-3">
-                <label class="block text-xs text-gray-400 mb-1">Amount ($)</label>
-                <input type="number" step="0.01" id="editAmount" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white" required>
-            </div>
-
-            <div class="mb-3">
-                <label class="block text-xs text-gray-400 mb-1">Due Date</label>
-                <input type="text" id="editDueDate" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white">
-            </div>
-
-            <div class="mb-4">
-                <label class="block text-xs text-gray-400 mb-1">Status</label>
-                <select id="editStatus" class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white">
-                    <option value="FRIENDLY">FRIENDLY</option>
-                    <option value="URGENT">URGENT</option>
-                    <option value="PAID">PAID</option>
-                </select>
-            </div>
-
-            <div class="flex justify-end gap-2">
-                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
 </body>
 </html>

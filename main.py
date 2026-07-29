@@ -349,6 +349,26 @@ async def login_action(request: Request):
     
     return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password"})
 
+from fastapi.responses import RedirectResponse
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login")
+async def login_action(request: Request):
+    form = await request.form()
+    username = form.get("username")
+    password = form.get("password")
+    
+    # Simple check - change username/password as needed
+    if username == "admin" and password == "admin":
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie(key="session_user", value=str(username))
+        return response
+    
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+
 @app.get("/logout")
 async def logout():
     response = RedirectResponse(url="/login", status_code=303)

@@ -71,10 +71,10 @@ async def home(request: Request):
     }
 
     return templates.TemplateResponse(
-        request,
-        "index.html",
-        {"invoices": invoices, "stats": stats},
-    )
+    request=request,
+    name="index.html",
+    context={"invoices": invoices, "stats": stats},
+)
 
 @app.post("/add-invoice")
 @app.post("/api/invoices")

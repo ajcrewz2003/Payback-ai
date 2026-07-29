@@ -152,6 +152,40 @@ async def add_invoice(request: Request):
 
     return JSONResponse({"success": True, "status": "success", "message": "Invoice created successfully"})
 
+@app.post("/api/invoices/{invoice_id}/edit")
+async def edit_invoice(invoice_id: str, request: Request):
+    try:
+        data = await request.json()
+        new_invoice_id = data.get("invoice_id")
+        client_name = data.get("client_name")
+        amount = float(data.get("amount", 0))
+        due_date = data.get("due_date", "")
+        status = data.get("status", "FRIENDLY").upper()
+
+        if not new_invoice_id:
+            return JSONResponse({"success": False, "message": "Invoice ID is required"}, status_code=400)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        if DATABASE_URL:
+            cursor.execute(
+                "UPDATE invoices SET invoice_id = %s, client_name = %s, amount = %s, due_date = %s, status = %s WHERE invoice_id = %s OR id::text = %s",
+                (new_invoice_id, client_name, amount, due_date, status, invoice_id, invoice_id)
+            )
+        else:
+            cursor.execute(
+                "UPDATE invoices SET invoice_id = ?, client_name = ?, amount = ?, due_date = ?, status = ? WHERE invoice_id = ? OR id = ?",
+                (new_invoice_id, client_name, amount, due_date, status, invoice_id, invoice_id)
+            )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return JSONResponse({"success": True, "message": "Invoice updated successfully!"})
+    except Exception as e:
+        print(f"Edit Invoice Error: {str(e)}")
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+    
 @app.post("/api/ai-add")
 async def ai_add_invoice(request: Request):
     api_key = os.environ.get("OPENAI_API_KEY")

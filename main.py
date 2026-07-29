@@ -11,13 +11,9 @@ from fastapi.templating import Jinja2Templates
 from openai import OpenAI
 from datetime import datetime
 import os
-
-try:
-    import psycopg2
-    from psycopg2.extras import RealDictCursor
-except ImportError:
-    psycopg2 = None
-    RealDictCursor = None
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import smtplib
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -391,3 +387,58 @@ async def logout():
     response = RedirectResponse(url="/login", status_code=303)
     response.delete_cookie(key="session_user")
     return response
+
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+@app.post("/api/send-email/{invoice_id}")
+async def send_invoice_email(invoice_id: str, request: Request):
+    data = await request.json()
+    recipient_email = data.get("email")
+
+    if not recipient_email:
+        return JSONResponse({"status": "error", "message": "Recipient email is required"}, status_code=400)
+
+    conn = get_db_connection()
+    inv = conn.execute(
+        "SELECT * FROM invoices WHERE invoice_id = ? OR id = ?",
+        (invoice_id, invoice_id),
+    ).fetchone()
+    conn.close()
+
+    if not inv:
+        return JSONResponse({"status": "error", "message": "Invoice not found"}, status_code=404)
+
+    # Email credentials from environment variables
+    smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", 587))
+    sender_email = os.environ.get("SMTP_USER")
+    sender_password = os.environ.get("SMTP_PASSWORD")
+
+    if not sender_email or not sender_password:
+        return JSONResponse({"status": "error", "message": "SMTP credentials are not configured on the server."}, status_code=500)
+
+    subject = f"Friendly Reminder: Invoice {inv['invoice_id']} for ${inv['amount']}"
+    body = (
+        f"Hi {inv['client_name']},\n\n"
+        f"I hope you're doing well! This is a quick note to remind you about invoice "
+        f"{inv['invoice_id']} for ${inv['amount']:.2f}, which was due on {inv['due_date']}.\n\n"
+        f"Please let me know when you might be able to process this payment. "
+        f"Thank you so much!\n\nBest regards,\nYour Name"
+    )
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = recipient_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, recipient_email, msg.as_string())
+        server.quit()
+        return {"status": "success", "message": "Email sent successfully!"}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Failed to send email: {str(e)}"}, status_code=500)

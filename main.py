@@ -329,3 +329,28 @@ async def delete_invoice(invoice_id: str):
     return JSONResponse(
         {"status": "success", "message": "Invoice deleted successfully"}
     )
+from fastapi.responses import RedirectResponse
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login")
+async def login_action(request: Request):
+    form = await request.form()
+    username = form.get("username")
+    password = form.get("password")
+    
+    # Add your validation logic here (e.g., check against env variables or database)
+    if username == "admin" and password == "admin": # Change to your credentials
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie(key="session_user", value=username)
+        return response
+    
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password"})
+
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie(key="session_user")
+    return response

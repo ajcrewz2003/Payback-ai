@@ -5,116 +5,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payback AI Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-    <div class="max-w-6xl mx-auto p-6">
-        <header class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold tracking-tight">Payback AI Dashboard</h1>
+<body class="bg-[#0b0f17] text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-10 pb-6 border-b border-slate-800">
             <div class="flex items-center space-x-3">
-                <button onclick="location.reload()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <div class="h-10 w-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-xl">
+                    P
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white">Payback AI</h1>
+                    <p class="text-xs text-slate-400">Smart Invoice & Revenue Recovery</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="location.reload()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-2 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     <span>Refresh</span>
                 </button>
-                <a href="/logout" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Logout</a>
+                <a href="/logout" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm">Logout</a>
             </div>
         </header>
 
         <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-sm">
-                <p class="text-sm font-medium text-slate-400">Total Outstanding</p>
-                <p class="text-3xl font-semibold text-white mt-2">${{ "%.2f"|format(stats.total_outstanding) }}</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+            <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl border border-slate-800/80 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl"></div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Total Outstanding</p>
+                <p class="text-3xl font-bold text-white tracking-tight">${{ "%.2f"|format(stats.total_outstanding) }}</p>
             </div>
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-sm">
-                <p class="text-sm font-medium text-slate-400">Total Invoices</p>
-                <p class="text-3xl font-semibold text-white mt-2">{{ stats.total_invoices }}</p>
+            <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl border border-slate-800/80 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl"></div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Total Invoices</p>
+                <p class="text-3xl font-bold text-white tracking-tight">{{ stats.total_invoices }}</p>
             </div>
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-sm">
-                <p class="text-sm font-medium text-slate-400">Urgent Notices</p>
-                <p class="text-3xl font-semibold text-rose-400 mt-2">{{ stats.urgent_notices }}</p>
+            <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl border border-slate-800/80 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl"></div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Urgent Notices</p>
+                <p class="text-3xl font-bold text-rose-400 tracking-tight">{{ stats.urgent_notices }}</p>
             </div>
         </div>
 
         <!-- AI Quick Entry -->
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-sm mb-6">
-            <h2 class="text-lg font-medium mb-4">AI Quick Entry</h2>
-            <form id="ai-form" class="space-y-4">
-                <textarea id="ai-prompt" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:outline-none focus:border-indigo-500" placeholder="e.g., John Smith owes me 150 dollars for design work due next Monday"></textarea>
-                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition">Parse & Add Invoice</button>
+        <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl border border-slate-800/80 shadow-lg mb-6">
+            <div class="flex items-center space-x-2 mb-3">
+                <span class="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-300">AI Quick Entry</h2>
+            </div>
+            <form id="ai-form" class="space-y-3">
+                <textarea id="ai-prompt" rows="2" class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 transition shadow-inner placeholder:text-slate-600" placeholder="e.g., John Smith owes me 150 dollars for design work due next Monday"></textarea>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition shadow-md shadow-indigo-600/20">Parse & Add Invoice</button>
             </form>
         </div>
 
         <!-- Manual Invoice Entry -->
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-sm mb-8">
-            <h2 class="text-lg font-medium mb-4">Manual Invoice Entry</h2>
+        <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl border border-slate-800/80 shadow-lg mb-8">
+            <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-300 mb-4">Manual Invoice Entry</h2>
             <form id="manual-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Invoice ID</label>
-                    <input type="text" id="manual-invoice-id" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500" placeholder="INV-001">
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Invoice ID</label>
+                    <input type="text" id="manual-invoice-id" required class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 transition placeholder:text-slate-600" placeholder="INV-001">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Client Name</label>
-                    <input type="text" id="manual-client-name" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500" placeholder="Client Name">
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Client Name</label>
+                    <input type="text" id="manual-client-name" required class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 transition placeholder:text-slate-600" placeholder="Client Name">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Amount ($)</label>
-                    <input type="number" step="0.01" id="manual-amount" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500" placeholder="0.00">
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Amount ($)</label>
+                    <input type="number" step="0.01" id="manual-amount" required class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 transition placeholder:text-slate-600" placeholder="0.00">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Due Date</label>
-                    <input type="date" id="manual-due-date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Due Date</label>
+                    <input type="date" id="manual-due-date" required class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 transition">
                 </div>
                 <div>
-                    <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-white p-2.5 rounded-lg text-sm font-medium transition">Add Manually</button>
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/50 p-3 rounded-xl text-xs font-semibold transition shadow-sm">Add Manually</button>
                 </div>
             </form>
         </div>
 
-        <!-- Invoices Table -->
-        <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-sm">
-            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
-                <h2 class="text-lg font-medium">Invoices</h2>
-                <a href="/api/export-csv" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm transition">Export CSV</a>
+        <!-- Invoices Table Container -->
+        <div class="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800/80 overflow-hidden shadow-lg">
+            <div class="p-6 border-b border-slate-800/80 flex justify-between items-center">
+                <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-300">Invoices</h2>
+                <a href="/api/export-csv" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-medium transition border border-slate-700/50">Export CSV</a>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider">
-                            <th class="p-4">Invoice ID</th>
+                        <tr class="bg-[#07090e]/50 text-slate-400 text-[11px] uppercase tracking-wider font-medium border-b border-slate-800/80">
+                            <th class="p-4 pl-6">Invoice ID</th>
                             <th class="p-4">Client Name</th>
                             <th class="p-4">Amount</th>
                             <th class="p-4">Due Date</th>
                             <th class="p-4">Status</th>
-                            <th class="p-4 text-right">Actions</th>
+                            <th class="p-4 pr-6 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700 text-sm">
+                    <tbody class="divide-y divide-slate-800/60 text-sm">
                         {% for inv in invoices %}
-                        <tr>
-                            <td class="p-4 font-medium">{{ inv.invoice_id }}</td>
-                            <td class="p-4">{{ inv.client_name }}</td>
-                            <td class="p-4">${{ "%.2f"|format(inv.amount) }}</td>
-                            <td class="p-4">{{ inv.due_date }}</td>
+                        <tr class="hover:bg-slate-800/20 transition">
+                            <td class="p-4 pl-6 font-semibold text-white">{{ inv.invoice_id }}</td>
+                            <td class="p-4 text-slate-300">{{ inv.client_name }}</td>
+                            <td class="p-4 font-medium text-slate-200">${{ "%.2f"|format(inv.amount) }}</td>
+                            <td class="p-4 text-slate-400 text-xs">{{ inv.due_date }}</td>
                             <td class="p-4">
                                 <select onchange="updateStatus('{{ inv.invoice_id }}', this.value)" 
-                                    class="px-2.5 py-1 rounded-full text-xs font-semibold border border-slate-600 cursor-pointer focus:outline-none 
-                                    {% if inv.status == 'PAID' %} bg-emerald-500/10 text-emerald-400 
-                                    {% elif inv.status == 'URGENT' %} bg-rose-500/10 text-rose-400 
-                                    {% else %} bg-amber-500/10 text-amber-400 {% endif %}">
-                                    <option value="FRIENDLY" {% if inv.status == 'FRIENDLY' %}selected{% endif %} class="bg-slate-800 text-amber-400">FRIENDLY</option>
-                                    <option value="URGENT" {% if inv.status == 'URGENT' %}selected{% endif %} class="bg-slate-800 text-rose-400">URGENT</option>
-                                    <option value="PAID" {% if inv.status == 'PAID' %}selected{% endif %} class="bg-slate-800 text-emerald-400">PAID</option>
+                                    class="px-3 py-1 rounded-lg text-xs font-semibold border cursor-pointer focus:outline-none transition 
+                                    {% if inv.status == 'PAID' %} bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20
+                                    {% elif inv.status == 'URGENT' %} bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20
+                                    {% else %} bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20 {% endif %}">
+                                    <option value="FRIENDLY" {% if inv.status == 'FRIENDLY' %}selected{% endif %} class="bg-slate-900 text-amber-400">FRIENDLY</option>
+                                    <option value="URGENT" {% if inv.status == 'URGENT' %}selected{% endif %} class="bg-slate-900 text-rose-400">URGENT</option>
+                                    <option value="PAID" {% if inv.status == 'PAID' %}selected{% endif %} class="bg-slate-900 text-emerald-400">PAID</option>
                                 </select>
                             </td>
-                            <td class="p-4 text-right space-x-2">
-                                <button onclick="sendEmailModal('{{ inv.invoice_id }}')" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 px-3 py-1 rounded transition text-xs font-medium">Email Reminder</button>
-                                <button onclick="deleteInvoice('{{ inv.invoice_id }}')" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 px-3 py-1 rounded transition text-xs font-medium">Delete</button>
-                                <button onclick="openEditModal('{{ inv.invoice_id }}', '{{ inv.client_name }}', '{{ inv.amount }}', '{{ inv.due_date }}', '{{ inv.status }}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-medium">Edit</button>
+                            <td class="p-4 pr-6 text-right space-x-1.5">
+                                <button onclick="sendEmailModal('{{ inv.invoice_id }}')" class="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 px-3 py-1.5 rounded-lg transition text-xs font-semibold">Email</button>
+                                <button onclick="openEditModal('{{ inv.invoice_id }}', '{{ inv.client_name }}', '{{ inv.amount }}', '{{ inv.due_date }}', '{{ inv.status }}')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-slate-200 px-3 py-1.5 rounded-lg transition text-xs font-semibold">Edit</button>
+                                <button onclick="deleteInvoice('{{ inv.invoice_id }}')" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 px-3 py-1.5 rounded-lg transition text-xs font-semibold">Delete</button>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="p-6 text-center text-slate-400">No invoices found. Use AI entry or manual entry above to create one!</td>
+                            <td colspan="6" class="p-10 text-center text-slate-500 text-xs">No invoices found. Use AI entry or manual entry above to create one!</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -124,71 +143,72 @@
     </div>
 
     <!-- Email Modal -->
-    <div id="email-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6 shadow-xl">
-            <h3 class="text-lg font-medium mb-4">Send Reminder Email</h3>
+    <div id="email-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h3 class="text-base font-bold text-white mb-4">Send Reminder Email</h3>
             <form id="email-form" class="space-y-4">
                 <input type="hidden" id="modal-invoice-id">
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Client Email Address</label>
-                    <input type="email" id="modal-client-email" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-indigo-500" placeholder="client@example.com">
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Client Email Address</label>
+                    <input type="email" id="modal-client-email" required class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 transition" placeholder="client@example.com">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Message Preview</label>
-                    <textarea id="modal-email-body" rows="5" readonly class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 focus:outline-none"></textarea>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Message Preview</label>
+                    <textarea id="modal-email-body" rows="5" readonly class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-xs text-slate-300 focus:outline-none"></textarea>
                 </div>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeEmailModal()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm transition">Cancel</button>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-medium transition">Send Email</button>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeEmailModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold transition">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold transition shadow-md shadow-indigo-600/20">Send Email</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Edit Invoice Modal -->
-    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-        <div class="bg-slate-800 border border-slate-700 p-6 rounded-xl w-full max-w-md shadow-xl text-white">
-            <h3 class="text-lg font-semibold mb-4">Edit Invoice</h3>
-            <form id="editForm" onsubmit="submitEditInvoice(event)">
+    <div id="editModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl text-white">
+            <h3 class="text-base font-bold text-white mb-4">Edit Invoice</h3>
+            <form id="editForm" onsubmit="submitEditInvoice(event)" class="space-y-4">
                 <input type="hidden" id="editOriginalId">
                 
-                <div class="mb-3">
-                    <label class="block text-xs text-slate-400 mb-1">Invoice ID</label>
-                    <input type="text" id="editInvoiceId" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" required>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Invoice ID</label>
+                    <input type="text" id="editInvoiceId" class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition" required>
                 </div>
 
-                <div class="mb-3">
-                    <label class="block text-xs text-slate-400 mb-1">Client Name</label>
-                    <input type="text" id="editClientName" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" required>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Client Name</label>
+                    <input type="text" id="editClientName" class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition" required>
                 </div>
 
-                <div class="mb-3">
-                    <label class="block text-xs text-slate-400 mb-1">Amount ($)</label>
-                    <input type="number" step="0.01" id="editAmount" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" required>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Amount ($)</label>
+                    <input type="number" step="0.01" id="editAmount" class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition" required>
                 </div>
 
-                <div class="mb-3">
-                    <label class="block text-xs text-slate-400 mb-1">Due Date</label>
-                    <input type="text" id="editDueDate" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Due Date</label>
+                    <input type="text" id="editDueDate" class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
                 </div>
 
-                <div class="mb-4">
-                    <label class="block text-xs text-slate-400 mb-1">Status</label>
-                    <select id="editStatus" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">Status</label>
+                    <select id="editStatus" class="w-full bg-[#07090e] border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
                         <option value="FRIENDLY">FRIENDLY</option>
                         <option value="URGENT">URGENT</option>
                         <option value="PAID">PAID</option>
                     </select>
                 </div>
 
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-sm font-medium transition">Save Changes</button>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeEditModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold transition">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold transition shadow-md shadow-indigo-600/20">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Script Controllers -->
     <script>
         document.getElementById('ai-form').addEventListener('submit', async (e) => {
             e.preventDefault();
